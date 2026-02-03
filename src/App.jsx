@@ -14,6 +14,7 @@ import SelfOnboarding from "./pages/SelfOnboarding"; // Restaurant self-registra
 import Pricing from "./pages/Pricing"; // Pricing/Subscription Page
 import Profile from "./pages/Profile"; // Profile Page
 import Orders from "./pages/Orders"; // Orders Page
+import RestaurantDashboard from "./pages/RestaurantDashboard"; // Restaurant Partner Dashboard
 
 function App() {
   return (
@@ -36,6 +37,9 @@ function App() {
 
         {/* Orders */}
         <Route path="/orders" element={<Orders />} />
+
+        {/* Restaurant Dashboard */}
+        <Route path="/restaurant-dashboard" element={<RestaurantDashboard />} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />

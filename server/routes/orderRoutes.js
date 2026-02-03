@@ -18,4 +18,19 @@ router.get("/", async (req, res) => {
   res.json(orders);
 });
 
+// Update Order Status (Accept/Reject/Delivered)
+router.put("/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body; // e.g., 'preparing', 'ready', 'delivered'
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status: status },
+      { new: true }
+    );
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
