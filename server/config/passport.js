@@ -13,7 +13,9 @@ if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
             {
                 clientID: GOOGLE_CLIENT_ID,
                 clientSecret: GOOGLE_CLIENT_SECRET,
-                callbackURL: "/api/auth/google/callback",
+                callbackURL: process.env.NODE_ENV === 'production'
+                    ? "https://food-ordering-system-x6mu.onrender.com/api/auth/google/callback"
+                    : "/api/auth/google/callback",
                 proxy: true // Important for Render deployment
             },
             async (accessToken, refreshToken, profile, done) => {

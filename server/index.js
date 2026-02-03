@@ -4,6 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
+app.set('trust proxy', 1); // Trust Render's proxy for HTTPS
 
 // Middleware
 app.use(cors());
@@ -51,9 +52,12 @@ app.use("/api/subscriptions", require("./routes/subscriptionRoutes")); // Premiu
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
-  console.error("Error:", err);
+  console.error("🔥 SERVER ERROR:", err);
   res.status(err.status || 500).json({
+    success: false,
     message: err.message || "Internal Server Error",
+    code: err.code || "UNKNOWN_ERROR",
+    details: err.stack,
   });
 });
 
