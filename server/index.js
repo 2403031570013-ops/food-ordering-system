@@ -10,6 +10,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Passport Config
+require('./config/passport');
+const passport = require('passport');
+app.use(passport.initialize());
+
 // Database Connection
 const connectDB = async () => {
   try {

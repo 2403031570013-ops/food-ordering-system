@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
@@ -22,6 +22,27 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { setUser, setToken } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check for Google Auth redirect params
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const userStr = params.get('user');
+
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userStr));
+        setToken(token);
+        setUser(user);
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        navigate('/');
+      } catch (e) {
+        console.error("Failed to parse user from Google Login", e);
+        setError('Google Login failed');
+      }
+    }
+  }, [setToken, setUser, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

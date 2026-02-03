@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const passport = require('passport');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const OTP = require('../models/OTP');
@@ -276,5 +277,25 @@ router.post(
   }
 );
 
-console.log('✅ Auth Routes Registered: POST /register, POST /login, POST /forgot-password, POST /reset-password');
+console.log('✅ Auth Routes Registered: POST /register, POST /login, POST /forgot-password, POST /reset-password, GET /google');
+
+// Google Auth Routes
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { failureRedirect: '/login', session: false }),
+  (req, res) => {
+    const token = generateToken(req.user._id);
+    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    // Redirect to login page with token
+    res.redirect(`${frontendURL}/login?token=${token}&user=${encodeURIComponent(JSON.stringify({
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role
+    }))}`);
+  }
+);
 module.exports = router;
