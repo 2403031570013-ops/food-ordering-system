@@ -31,6 +31,8 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure }) => {
             // API URL - Hardcoded to ensure connection
             const API_URL = "https://food-ordering-system-x6mu.onrender.com";
 
+            console.log("🔥 PAYMENT URL:", `${API_URL}/api/payment/create-order`);
+
             // Create order on backend
             const orderResponse = await axios.post(`${API_URL}/api/payment/create-order`, {
                 amount: amount,
