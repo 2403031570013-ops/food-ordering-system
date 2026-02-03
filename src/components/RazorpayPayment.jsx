@@ -28,8 +28,8 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure }) => {
                 return;
             }
 
-            // API URL - works in both development and production
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            // API URL - Hardcoded to ensure connection
+            const API_URL = "https://food-ordering-system-x6mu.onrender.com";
 
             // Create order on backend
             const orderResponse = await axios.post(`${API_URL}/api/payment/create-order`, {
