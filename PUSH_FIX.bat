@@ -1,16 +1,19 @@
 @echo off
 echo ===================================================
-echo     SAVING AND PUSHING FIXES
+echo     FORCING NEW DEPLOYMENT (TRIGGER)
 echo ===================================================
 echo.
-echo [1/3] Adding files...
+echo [1/4] Creating trigger file...
+echo %date% %time% > deploy_trigger.txt
+echo.
+echo [2/4] Adding files...
 git add .
 echo.
-echo [2/3] Committing changes...
-git commit -m "fix: enable google auth debugging and https"
+echo [3/4] Committing changes...
+git commit -m "chore: trigger render deployment"
 echo.
-echo [3/3] Pushing to GitHub...
+echo [4/4] Pushing to GitHub...
 git push origin main
 echo.
-echo DONE! Check Render Dashboard for deployment.
+echo DONE! This MUST trigger a new deployment on Render.
 pause
