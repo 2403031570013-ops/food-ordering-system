@@ -7,7 +7,7 @@ import { useCartStore } from '../store';
 // Enhanced Mock Data with Images
 const MOCK_FOODS = [
   {
-    _id: '1',
+    _id: '65f2d6e0a3b1c8f1e4d5a0a1',
     name: 'Supreme Pepperoni Pizza',
     description: 'Crispy edges with double pepperoni, mozzarella, and our signature tomato sauce.',
     price: 399,
@@ -17,7 +17,7 @@ const MOCK_FOODS = [
     available: true,
   },
   {
-    _id: '2',
+    _id: '65f2d6e0a3b1c8f1e4d5a0a2',
     name: 'Truffle Mushroom Burger',
     description: 'Juicy beef patty topped with swiss cheese, truffle mayo, and sautéed mushrooms.',
     price: 249,
@@ -27,7 +27,7 @@ const MOCK_FOODS = [
     available: true,
   },
   {
-    _id: '3',
+    _id: '65f2d6e0a3b1c8f1e4d5a0a3',
     name: 'Creamy Alfredo Pasta',
     description: 'Fettuccine pasta tossed in a rich parmesan and cream sauce with grilled chicken.',
     price: 299,
@@ -37,7 +37,7 @@ const MOCK_FOODS = [
     available: true,
   },
   {
-    _id: '4',
+    _id: '65f2d6e0a3b1c8f1e4d5a0a4',
     name: 'Spicy Tandoori Wrap',
     description: 'Grilled tandoori chicken chunks wrapped in a soft naan with mint chutney.',
     price: 199,
@@ -47,7 +47,7 @@ const MOCK_FOODS = [
     available: true,
   },
   {
-    _id: '5',
+    _id: '65f2d6e0a3b1c8f1e4d5a0a5',
     name: 'Berry Blast Smoothie',
     description: 'A refreshing blend of strawberries, blueberries, raspberries, and yogurt.',
     price: 149,
@@ -57,7 +57,7 @@ const MOCK_FOODS = [
     available: true,
   },
   {
-    _id: '6',
+    _id: '65f2d6e0a3b1c8f1e4d5a0a6',
     name: 'Chocolate Lava Cake',
     description: 'Decadent chocolate cake with a molten center, served with vanilla ice cream.',
     price: 179,
@@ -135,8 +135,8 @@ export default function Home() {
                 key={category}
                 onClick={() => setActiveCategory(category)}
                 className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold transition-all duration-300 ${activeCategory === category
-                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/30 scale-105'
-                    : 'bg-white text-slate-600 hover:bg-orange-50 hover:text-orange-600'
+                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/30 scale-105'
+                  : 'bg-white text-slate-600 hover:bg-orange-50 hover:text-orange-600'
                   }`}
               >
                 {category}
