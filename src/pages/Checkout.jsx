@@ -5,6 +5,7 @@ import { useCartStore, useAuthStore } from '../store';
 import { formatPrice } from '../utils/helpers';
 import { ArrowLeft, CreditCard, MapPin, User, Phone, Mail } from 'lucide-react';
 import RazorpayPayment from '../components/RazorpayPayment';
+import api from '../api'; // Import configured api client
 
 export default function Checkout() {
     const navigate = useNavigate();
@@ -34,14 +35,18 @@ export default function Checkout() {
         console.log('Payment Successful!', paymentData);
 
         try {
-            // Here you would save the order to your database
-            // const orderData = {
-            //   items,
-            //   address,
-            //   paymentId: paymentData.paymentId,
-            //   totalAmount: total,
-            // };
-            // await axios.post('/api/orders', orderData);
+            // Save the order to database
+            const orderData = {
+                items,
+                address,
+                paymentId: paymentData.paymentId,
+                totalAmount: total,
+                userId: user?.id || user?._id || "guest", // Ensure userId is passed
+                status: "placed"
+            };
+
+            // Use api.post (uses correct Base URL)
+            await api.post('/orders', orderData);
 
             setOrderPlaced(true);
             clearCart();
