@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, ChefHat, Clock, CheckCircle, Bell } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 export default function RestaurantDashboard() {
     const [orders, setOrders] = useState([]);
