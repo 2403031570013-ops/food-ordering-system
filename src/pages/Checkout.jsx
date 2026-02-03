@@ -37,13 +37,31 @@ export default function Checkout() {
         try {
             // Save the order to database
             const orderData = {
-                items,
-                address,
+                items: items.map(item => ({
+                    food: item._id || item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity
+                })),
+                deliveryAddress: {
+                    fullName: address.fullName,
+                    phone: address.phone,
+                    email: address.email,
+                    address: `${address.addressLine1}, ${address.addressLine2}`,
+                    city: address.city,
+                    state: address.state,
+                    pincode: address.pincode
+                },
                 paymentId: paymentData.paymentId,
                 totalAmount: total,
-                userId: user?.id || user?._id || "guest", // Ensure userId is passed
-                status: "placed"
+                user: user?.id || user?._id
             };
+
+            if (!orderData.user) {
+                console.error("User ID missing, cannot save order.");
+                alert("Please login again to save the order.");
+                return;
+            }
 
             // Use api.post (uses correct Base URL)
             await api.post('/orders', orderData);
