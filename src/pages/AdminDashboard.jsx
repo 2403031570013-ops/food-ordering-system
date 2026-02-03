@@ -1,0 +1,204 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store';
+import axios from 'axios';
+import {
+    Users, ShoppingBag, Store, DollarSign, TrendingUp,
+    Clock, CheckCircle, XCircle, Eye
+} from 'lucide-react';
+
+export default function AdminDashboard() {
+    const navigate = useNavigate();
+    const { user, token } = useAuthStore();
+    const [stats, setStats] = useState(null);
+    const [recentOrders, setRecentOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!user || user.role !== 'admin') {
+            navigate('/login');
+            return;
+        }
+        fetchDashboardData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, navigate]);
+
+    const fetchDashboardData = async () => {
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const response = await axios.get(`${API_URL}/api/admin/dashboard/stats`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setStats(response.data.stats);
+            setRecentOrders(response.data.recentOrders);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen pt-20 flex items-center justify-center">
+                <div className="text-2xl font-bold text-slate-600">Loading...</div>
+            </div>
+        );
+    }
+
+    const getColorClasses = (color) => {
+        const colorMap = {
+            blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
+            green: { bg: 'bg-green-100', text: 'text-green-600' },
+            orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+            purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
+        };
+        return colorMap[color] || colorMap.blue;
+    };
+
+    const statCards = [
+        { title: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: 'blue' },
+        { title: 'Restaurants', value: stats?.totalHotels || 0, icon: Store, color: 'green' },
+        { title: 'Total Orders', value: stats?.totalOrders || 0, icon: ShoppingBag, color: 'orange' },
+        { title: 'Revenue', value: `₹${stats?.totalRevenue || 0}`, icon: DollarSign, color: 'purple' },
+    ];
+
+    return (
+        <div className="min-h-screen pt-20 pb-20 px-4 bg-gradient-to-br from-slate-50 to-slate-100">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-10"
+                >
+                    <h1 className="text-5xl font-bold text-slate-900 mb-2">Admin Dashboard</h1>
+                    <p className="text-slate-600">Manage your food ordering platform</p>
+                </motion.div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    {statCards.map((stat, index) => {
+                        const colors = getColorClasses(stat.color);
+                        return (
+                            <motion.div
+                                key={stat.title}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="glass-card p-6"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-slate-600 mb-1">{stat.title}</p>
+                                        <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+                                    </div>
+                                    <div className={`p-4 rounded-full ${colors.bg}`}>
+                                        <stat.icon className={`w-8 h-8 ${colors.text}`} />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate('/admin/users')}
+                        className="glass-card p-6 text-left hover:shadow-lg transition-shadow"
+                    >
+                        <Users className="w-10 h-10 text-blue-600 mb-3" />
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">Manage Users</h3>
+                        <p className="text-slate-600">View and manage all users</p>
+                    </motion.button>
+
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate('/admin/restaurants')}
+                        className="glass-card p-6 text-left hover:shadow-lg transition-shadow"
+                    >
+                        <Store className="w-10 h-10 text-green-600 mb-3" />
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">Restaurants</h3>
+                        <p className="text-slate-600">Approve and manage restaurants</p>
+                    </motion.button>
+
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate('/admin/orders')}
+                        className="glass-card p-6 text-left hover:shadow-lg transition-shadow"
+                    >
+                        <ShoppingBag className="w-10 h-10 text-orange-600 mb-3" />
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">Orders</h3>
+                        <p className="text-slate-600">Track and manage orders</p>
+                    </motion.button>
+
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate('/admin/onboarding')}
+                        className="glass-card p-6 text-left hover:shadow-lg transition-shadow bg-gradient-to-br from-blue-50 to-purple-50"
+                    >
+                        <div className="flex items-center gap-2 mb-3">
+                            <Store className="w-10 h-10 text-purple-600" />
+                            <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full">NEW</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">Add Restaurant</h3>
+                        <p className="text-slate-600">Onboard a new partner</p>
+                    </motion.button>
+                </div>
+
+                {/* Recent Orders */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="glass-card p-6"
+                >
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6">Recent Orders</h2>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-slate-200">
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Order ID</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Customer</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Restaurant</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Amount</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Status</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {recentOrders.map((order) => (
+                                    <tr key={order._id} className="border-b border-slate-100 hover:bg-slate-50">
+                                        <td className="py-3 px-4 text-sm">#{order._id.slice(-6)}</td>
+                                        <td className="py-3 px-4 text-sm">{order.user?.name || 'N/A'}</td>
+                                        <td className="py-3 px-4 text-sm">{order.hotel?.name || 'N/A'}</td>
+                                        <td className="py-3 px-4 text-sm font-semibold">₹{order.totalAmount}</td>
+                                        <td className="py-3 px-4 text-sm">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                                order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                {order.status}
+                                            </span>
+                                        </td>
+                                        <td className="py-3 px-4 text-sm">
+                                            <button className="text-blue-600 hover:text-blue-700">
+                                                <Eye className="w-5 h-5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </motion.div>
+            </div>
+        </div>
+    );
+}
