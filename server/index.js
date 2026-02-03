@@ -57,6 +57,10 @@ app.use((err, req, res, next) => {
     success: false,
     message: err.message || "Internal Server Error",
     code: err.code || "UNKNOWN_ERROR",
+    debug_env: {
+      secret_len: process.env.GOOGLE_CLIENT_SECRET ? process.env.GOOGLE_CLIENT_SECRET.length : 0,
+      secret_end: process.env.GOOGLE_CLIENT_SECRET ? process.env.GOOGLE_CLIENT_SECRET.slice(-3) : "N/A"
+    },
     details: err.stack,
   });
 });
