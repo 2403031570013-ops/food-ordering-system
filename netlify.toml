@@ -1,6 +1,0 @@
-[build]
-  command = "echo Skipping build... using pre-built dist"
-  publish = "dist"
-
-[context.production]
-  command = "echo Skipping build... using pre-built dist"
