@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { Store, User, Mail, Phone, MapPin, FileText, CheckCircle, Shield } from 'lucide-react';
 
 export default function AdminOnboarding() {
@@ -58,12 +58,7 @@ export default function AdminOnboarding() {
         setError('');
 
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const response = await axios.post(`${API_URL}/api/admin/onboarding/restaurant`, formData, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            const response = await api.post('/admin/onboarding/restaurant', formData);
 
             setSuccess(true);
             setTimeout(() => {

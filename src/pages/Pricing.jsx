@@ -48,26 +48,39 @@ export default function Pricing() {
         try {
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-            // Create order
+            // 1. Initiate Subscription (Create Order)
             const orderResponse = await axios.post(
-                `${API_URL}/api/subscriptions/upgrade`,
+                `${API_URL}/api/subscriptions/initiate`,
                 { plan },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            // Open Razorpay
+            if (!orderResponse.data.success) {
+                throw new Error('Failed to initiate subscription');
+            }
+
+            const { key, orderId, amount, currency, planName, description } = orderResponse.data;
+
+            // 2. Open Razorpay Checkout
             const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
-                amount: orderResponse.data.amount,
-                currency: orderResponse.data.currency,
-                name: 'FoodHub Premium',
-                description: `${orderResponse.data.planName} Subscription`,
-                order_id: orderResponse.data.orderId,
+                key: key, // Use key from backend
+                amount: amount,
+                currency: currency,
+                name: 'FoodHub',
+                description: description,
+                order_id: orderId,
+                prefill: {
+                    name: user.name,
+                    email: user.email,
+                },
+                theme: {
+                    color: '#f97316', // Orange-500
+                },
                 handler: async function (response) {
-                    // Verify payment
+                    // 3. Verify Payment
                     try {
                         const verifyResponse = await axios.post(
-                            `${API_URL}/api/subscriptions/verify-payment`,
+                            `${API_URL}/api/subscriptions/verify`,
                             {
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_payment_id: response.razorpay_payment_id,
@@ -77,29 +90,34 @@ export default function Pricing() {
                             { headers: { Authorization: `Bearer ${token}` } }
                         );
 
-                        alert(`🎉 ${verifyResponse.data.message}`);
-                        fetchCurrentSubscription();
-                        setLoading(false);
+                        if (verifyResponse.data.success) {
+                            alert(`🎉 Success! You are now on ${planName}.`);
+                            fetchCurrentSubscription();
+                        } else {
+                            alert('Verification failed, but payment was deducted. Contact support.');
+                        }
                     } catch (error) {
-                        alert('Payment verification failed!');
+                        console.error('Verification error:', error);
+                        alert('Payment successful but verification failed. Please contact support.');
+                    } finally {
                         setLoading(false);
                     }
                 },
-                prefill: {
-                    name: user.name,
-                    email: user.email,
-                },
-                theme: {
-                    color: '#f97316',
-                },
+                modal: {
+                    ondismiss: function () {
+                        setLoading(false);
+                        console.log('Payment cancelled');
+                    }
+                }
             };
 
             const razorpay = new window.Razorpay(options);
             razorpay.open();
-            setLoading(false);
+
         } catch (error) {
-            console.error('Upgrade error:', error);
-            alert('Failed to initiate upgrade');
+            console.error('Upgrade flow error:', error);
+            const msg = error.response?.data?.message || error.message || 'Something went wrong';
+            alert(`Failed: ${msg}`);
             setLoading(false);
         }
     };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const RazorpayPayment = ({ amount, onSuccess, onFailure }) => {
     const [loading, setLoading] = useState(false);
@@ -28,13 +28,11 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure }) => {
                 return;
             }
 
-            // API URL - Hardcoded to ensure connection
-            const API_URL = "https://food-ordering-system-x6mu.onrender.com";
-
-            console.log("🔥 PAYMENT URL:", `${API_URL}/api/payment/create-order`);
+            // Create order on backend
+            // Uses configured api client (auto-detects localhost vs prod)
 
             // Create order on backend
-            const orderResponse = await axios.post(`${API_URL}/api/payment/create-order`, {
+            const orderResponse = await api.post('/payment/create-order', {
                 amount: amount,
                 currency: 'INR',
             });
@@ -52,8 +50,8 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure }) => {
                 handler: async function (response) {
                     try {
                         // Verify payment on backend
-                        const verifyResponse = await axios.post(
-                            `${API_URL}/api/payment/verify-payment`,
+                        const verifyResponse = await api.post(
+                            '/payment/verify-payment',
                             {
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_payment_id: response.razorpay_payment_id,

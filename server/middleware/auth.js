@@ -33,6 +33,7 @@ const protect = async (req, res, next) => {
 };
 
 // Admin middleware - check if user is admin
+// Admin middleware - check if user is admin
 const admin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();
@@ -41,4 +42,14 @@ const admin = (req, res, next) => {
   }
 };
 
-module.exports = { protect, admin };
+// Restrict to specific roles
+const restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'User role is not authorized to access this route' });
+    }
+    next();
+  };
+};
+
+module.exports = { protect, admin, restrictTo };

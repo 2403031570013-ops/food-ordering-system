@@ -23,6 +23,8 @@ export default function RestaurantOnboarding() {
         description: '',
         fssaiLicense: '',
         gstNumber: '',
+        password: '',
+        confirmPassword: '',
     });
 
     const cuisineOptions = [
@@ -49,13 +51,19 @@ export default function RestaurantOnboarding() {
         setLoading(true);
         setError('');
 
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match');
+            setLoading(false);
+            return;
+        }
+
         try {
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             const response = await axios.post(`${API_URL}/api/onboarding/restaurant`, formData);
 
             setSuccess(true);
             setTimeout(() => {
-                navigate('/');
+                navigate('/login');
             }, 3000);
         } catch (err) {
             setError(err.response?.data?.message || 'Something went wrong. Please try again.');
@@ -74,9 +82,9 @@ export default function RestaurantOnboarding() {
                     <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-6" />
                     <h2 className="text-3xl font-bold text-slate-900 mb-4">Application Submitted!</h2>
                     <p className="text-slate-600 mb-6">
-                        Thank you for your interest! Our team will review your application and get back to you within 2-3 business days.
+                        Your account has been created. Please login to track your application status.
                     </p>
-                    <p className="text-sm text-slate-500">Redirecting to home...</p>
+                    <p className="text-sm text-slate-500">Redirecting to login...</p>
                 </motion.div>
             </div>
         );
@@ -282,6 +290,44 @@ export default function RestaurantOnboarding() {
                                         rows={3}
                                         className="input-field"
                                         placeholder="Tell us about your restaurant..."
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Password Section */}
+                        <div>
+                            <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <Store className="w-6 h-6" />
+                                Account Security
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Password *
+                                    </label>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        required
+                                        className="input-field"
+                                        placeholder="Min 6 characters"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Confirm Password *
+                                    </label>
+                                    <input
+                                        type="password"
+                                        name="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        required
+                                        className="input-field"
+                                        placeholder="Confirm password"
                                     />
                                 </div>
                             </div>

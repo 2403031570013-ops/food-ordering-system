@@ -152,10 +152,11 @@ router.get('/users', protect, admin, async (req, res) => {
 });
 
 // @route   GET /api/admin/hotels
-// @desc    Get all hotels/restaurants
+// @desc    Get all hotels/restaurants (including pending)
 // @access  Private/Admin
 router.get('/hotels', protect, admin, async (req, res) => {
     try {
+        // Admin needs to see EVERYTHING: pending, active, rejected, closed
         const hotels = await Hotel.find().sort({ createdAt: -1 });
         res.json(hotels);
     } catch (error) {
@@ -167,12 +168,17 @@ router.get('/hotels', protect, admin, async (req, res) => {
 // @route   PUT /api/admin/hotels/:id/approve
 // @desc    Approve/reject restaurant onboarding
 // @access  Private/Admin
+const { demoMenus } = require('../seed/demoData');
+
+// @route   PUT /api/admin/hotels/:id/approve
+// @desc    Approve/reject restaurant onboarding
+// @access  Private/Admin
 router.put('/hotels/:id/approve', protect, admin, async (req, res) => {
     try {
-        const { approved } = req.body;
+        // Force approval to true
         const hotel = await Hotel.findByIdAndUpdate(
             req.params.id,
-            { approved, status: approved ? 'active' : 'rejected' },
+            { approved: true, status: 'active' },
             { new: true }
         );
 
@@ -180,9 +186,62 @@ router.put('/hotels/:id/approve', protect, admin, async (req, res) => {
             return res.status(404).json({ message: 'Hotel not found' });
         }
 
+        // Update User Role to 'restaurant' so they can access dashboard
+        await User.findByIdAndUpdate(hotel.user, { role: 'restaurant' });
+
+        // AUTO-SEED MENU IF EMPTY (Section 4 Requirement)
+        const foodCount = await Food.countDocuments({ hotelId: hotel._id });
+        if (foodCount === 0) {
+            let menuToSeed = [];
+
+            // Determine best menu based on cuisine
+            const cuisine = (hotel.cuisine && hotel.cuisine.length > 0) ? hotel.cuisine[0] : 'Indian';
+
+            if (cuisine.toLowerCase().includes('pizza') || cuisine.toLowerCase().includes('italian')) {
+                menuToSeed = demoMenus["Pizza Palace"];
+            } else if (cuisine.toLowerCase().includes('burger') || cuisine.toLowerCase().includes('american')) {
+                menuToSeed = demoMenus["Burger Junction"];
+            } else {
+                // Default to Indian for now (covers "Indian", "North Indian", etc.)
+                menuToSeed = demoMenus["Spice of India"];
+            }
+
+            if (menuToSeed && menuToSeed.length > 0) {
+                const foodItems = menuToSeed.map(item => ({
+                    ...item,
+                    vegetarian: item.isVeg,
+                    hotelId: hotel._id,
+                    hotel: hotel._id
+                }));
+                await Food.insertMany(foodItems);
+                console.log(`[AUTO-SEED] Generated default menu for ${hotel.name} (${foodItems.length} items)`);
+            }
+        }
+
         res.json(hotel);
     } catch (error) {
         console.error('Approve hotel error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   DELETE /api/admin/hotels/:id/reject
+// @desc    Reject and delete restaurant application
+// @access  Private/Admin
+router.delete('/hotels/:id/reject', protect, admin, async (req, res) => {
+    try {
+        const hotel = await Hotel.findByIdAndDelete(req.params.id);
+
+        if (!hotel) {
+            return res.status(404).json({ message: 'Hotel not found' });
+        }
+
+        // Also revert the user role? Or maybe just delete user too if it was purely for this?
+        // For now, let's keep it simple.
+
+        res.json({ message: 'Restaurant application rejected and deleted' });
+    } catch (error) {
+        console.error('Reject hotel error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -242,6 +301,92 @@ router.put('/orders/:id/status', protect, admin, async (req, res) => {
         res.json(order);
     } catch (error) {
         console.error('Update order status error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// --- ANALYTICS ENDPOINTS ---
+
+// @route   GET /api/admin/analytics/sales
+// @desc    Get sales analytics (Daily Revenue)
+// @access  Private/Admin
+router.get('/analytics/sales', protect, admin, async (req, res) => {
+    try {
+        const salesData = await Order.aggregate([
+            { $match: { status: 'delivered' } }, // Only consider delivered/paid orders
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    totalRevenue: { $sum: "$totalAmount" },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }, // Sort by date ascending
+            { $limit: 30 } // Last 30 days
+        ]);
+        res.json(salesData);
+    } catch (error) {
+        console.error('Sales analytics error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/admin/analytics/payments
+// @desc    Get payment status breakdown
+// @access  Private/Admin
+router.get('/analytics/payments', protect, admin, async (req, res) => {
+    try {
+        const paymentStats = await Order.aggregate([
+            {
+                $group: {
+                    _id: "$paymentStatus",
+                    count: { $sum: 1 },
+                    totalAmount: { $sum: "$totalAmount" }
+                }
+            }
+        ]);
+        res.json(paymentStats);
+    } catch (error) {
+        console.error('Payment analytics error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/admin/analytics/top-restaurants
+// @desc    Get top performing restaurants
+// @access  Private/Admin
+router.get('/analytics/top-restaurants', protect, admin, async (req, res) => {
+    try {
+        const topRest = await Order.aggregate([
+            { $match: { status: 'delivered' } },
+            {
+                $group: {
+                    _id: "$hotel", // Group by Hotel ID
+                    revenue: { $sum: "$totalAmount" },
+                    orders: { $sum: 1 }
+                }
+            },
+            { $sort: { revenue: -1 } },
+            { $limit: 5 },
+            {
+                $lookup: {
+                    from: "hotels", // Collection name (lowercase plural)
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "hotelInfo"
+                }
+            },
+            {
+                $project: {
+                    name: { $arrayElemAt: ["$hotelInfo.name", 0] },
+                    revenue: 1,
+                    orders: 1
+                }
+            }
+        ]);
+        res.json(topRest);
+    } catch (error) {
+        console.error('Restaurant analytics error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

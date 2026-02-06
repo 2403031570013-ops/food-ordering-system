@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
   try {
     const { latitude, longitude, radius } = req.query;
 
-    let query = Hotel.find();
+    let query = Hotel.find({ approved: true });
 
     // If location coordinates provided, find nearby hotels
     if (latitude && longitude) {
@@ -57,6 +57,62 @@ router.get('/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Get hotel error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+const { protect } = require('../middleware/auth');
+
+// Restaurant Owner: Get My Profile
+router.get('/profile/me', protect, async (req, res) => {
+  try {
+    let hotel = await Hotel.findOne({ user: req.user._id });
+    if (!hotel) {
+      hotel = await Hotel.findOne({ email: req.user.email });
+    }
+
+    if (!hotel) {
+      return res.status(404).json({ message: 'Restaurant profile not found' });
+    }
+
+    res.json(hotel);
+  } catch (error) {
+    console.error('My hotel profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Restaurant Owner: Toggle Open/Close Status
+router.put('/profile/toggle-status', protect, async (req, res) => {
+  try {
+    // Find hotel owned by this user
+    // Note: In onboardingRoutes, we used email to link, but updated schema has 'user' field. 
+    // We should try to find by user ID first, fallback to email if legacy.
+
+    let hotel = await Hotel.findOne({ user: req.user._id });
+
+    if (!hotel) {
+      // Fallback to email for legacy data if any
+      hotel = await Hotel.findOne({ email: req.user.email });
+    }
+
+    if (!hotel) {
+      return res.status(404).json({ message: 'Restaurant profile not found for this user' });
+    }
+
+    // Toggle status
+    hotel.isOpen = !hotel.isOpen;
+    await hotel.save();
+
+    res.json({
+      success: true,
+      message: `Restaurant is now ${hotel.isOpen ? 'OPEN' : 'CLOSED'}`,
+      isOpen: hotel.isOpen,
+      hotel
+    });
+
+  } catch (error) {
+    console.error('My hotel toggle error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

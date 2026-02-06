@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore, useAuthStore } from '../store';
 import { formatPrice } from '../utils/helpers';
-import { ArrowLeft, CreditCard, MapPin, User, Phone, Mail } from 'lucide-react';
-import RazorpayPayment from '../components/RazorpayPayment';
-import api from '../api'; // Import configured api client
+import { ArrowLeft, CreditCard, MapPin, User, Phone, Mail, Loader2, Lock } from 'lucide-react';
+import api from '../api';
 
 export default function Checkout() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const { items, clearCart } = useCartStore();
-    const [orderPlaced, setOrderPlaced] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     // Address form state
     const [address, setAddress] = useState({
@@ -31,12 +30,40 @@ export default function Checkout() {
     const tax = subtotal * 0.05;
     const total = subtotal + deliveryFee + tax;
 
-    const handlePaymentSuccess = async (paymentData) => {
-        console.log('Payment Successful!', paymentData);
+    const loadRazorpayScript = () => {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
+    // State to store created Order ID for retries (Idempotency)
+    const [existingOrderId, setExistingOrderId] = useState(null);
+
+    const handlePayment = async () => {
+        if (items.length === 0) return;
+
+        // Basic Validation
+        if (!address.fullName || !address.phone || !address.addressLine1 || !address.city || !address.pincode) {
+            alert('Please fill in all required address fields.');
+            return;
+        }
+
+        setIsProcessing(true);
 
         try {
-            // Save the order to database
-            const orderData = {
+            // 1. Load Script
+            const scriptLoaded = await loadRazorpayScript();
+            if (!scriptLoaded) {
+                throw new Error('Razorpay SDK failed to load. Check your internet connection.');
+            }
+
+            // 2. Initiate Order (Create DB Order + Razorpay Order)
+            // If we already initiated an order for this session, reuse it.
+            const orderPayload = {
                 items: items.map(item => ({
                     food: item._id || item.id,
                     name: item.name,
@@ -52,62 +79,97 @@ export default function Checkout() {
                     state: address.state,
                     pincode: address.pincode
                 },
-                paymentId: paymentData.paymentId,
                 totalAmount: total,
-                user: user?.id || user?._id
+                user: user?.id || user?._id,
+                orderId: existingOrderId // Pass existing ID if available
             };
 
-            if (!orderData.user) {
-                console.error("User ID missing, cannot save order.");
-                alert("Please login again to save the order.");
-                return;
+            const initiateRes = await api.post('/payment/initiate', orderPayload);
+
+            if (!initiateRes.data.success) {
+                // If it failed because it's already paid, handle that specially
+                if (initiateRes.data.paymentStatus === 'paid') {
+                    clearCart();
+                    navigate('/order-success');
+                    return;
+                }
+                throw new Error(initiateRes.data.message || 'Failed to initiate order');
             }
 
-            // Use api.post (uses correct Base URL)
-            await api.post('/orders', orderData);
+            const { orderId, razorpayOrderId, amount, currency, key } = initiateRes.data;
 
-            setOrderPlaced(true);
-            clearCart();
+            // Store the Order ID so next click reuses it (Idempotency)
+            setExistingOrderId(orderId);
 
-            // Redirect to success page after 3 seconds
-            setTimeout(() => {
-                navigate('/');
-            }, 3000);
+            // 3. Open Razorpay
+            const options = {
+                key: key,
+                amount: amount,
+                currency: currency,
+                name: 'FoodHub',
+                description: 'Order Payment',
+                order_id: razorpayOrderId,
+                handler: async function (response) {
+                    try {
+                        // 4. Verify Payment
+                        const verifyRes = await api.post('/payment/verify', {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            orderId: orderId
+                        });
+
+                        if (verifyRes.data.success) {
+                            // Payment Confirmed
+                            clearCart();
+                            navigate('/order-success'); // You might need to create this page or route to a success view
+                        } else {
+                            alert('Payment verification failed.');
+                            setIsProcessing(false);
+                        }
+                    } catch (error) {
+                        console.error('Verification Error:', error);
+                        alert('Payment verification failed. Please contact support.');
+                        setIsProcessing(false);
+                    }
+                },
+                prefill: {
+                    name: address.fullName,
+                    email: address.email,
+                    contact: address.phone,
+                },
+                theme: {
+                    color: '#FF6B35',
+                },
+                modal: {
+                    ondismiss: function () {
+                        setIsProcessing(false);
+                        // Do not alert "Cancelled" aggressively, just reset loading
+                        console.log('Payment modal closed');
+                    },
+                },
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                console.error("Payment Failed", response.error);
+                alert(`Payment process failed: ${response.error.description}`);
+                setIsProcessing(false);
+            });
+            rzp.open();
+
         } catch (error) {
-            console.error('Order placement error:', error);
-            alert('Payment successful but order failed to save. Please contact support.');
+            console.error('Payment Error:', error);
+            // Enhanced Error Handling
+            const errorMessage = error.response?.data?.message || error.message || 'Something went wrong processing your payment.';
+            alert(errorMessage);
+            setIsProcessing(false);
         }
     };
 
-    const handlePaymentFailure = (error) => {
-        console.error('Payment Failed:', error);
-        alert(`Payment failed! ${error}\nPlease try again.`);
-    };
-
-    // If cart is empty, redirect
     if (items.length === 0) {
         navigate('/cart');
         return null;
-    }
-
-    // If order is placed, show success message
-    if (orderPlaced) {
-        return (
-            <div className="min-h-screen pt-20 pb-20 flex items-center justify-center px-4">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center glass-card p-12 max-w-md"
-                >
-                    <div className="text-6xl mb-6">🎉</div>
-                    <h1 className="text-3xl font-bold text-slate-900 mb-4">Order Placed!</h1>
-                    <p className="text-slate-600 mb-6">
-                        Your payment was successful and your delicious food is on its way!
-                    </p>
-                    <p className="text-sm text-slate-500">Redirecting to home...</p>
-                </motion.div>
-            </div>
-        );
     }
 
     return (
@@ -143,114 +205,151 @@ export default function Checkout() {
                                 Delivery Address
                             </h2>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={(e) => e.preventDefault()}>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    <label htmlFor="fullName" className="block text-sm font-semibold text-slate-700 mb-2">
                                         <User className="w-4 h-4 inline mr-1" />
-                                        Full Name
+                                        Full Name *
                                     </label>
                                     <input
+                                        id="fullName"
+                                        name="fullName"
                                         type="text"
                                         value={address.fullName}
                                         onChange={(e) => setAddress({ ...address, fullName: e.target.value })}
                                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
                                         placeholder="John Doe"
+                                        disabled={isProcessing}
+                                        required
+                                        autoComplete="name"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    <label htmlFor="phone" className="block text-sm font-semibold text-slate-700 mb-2">
                                         <Phone className="w-4 h-4 inline mr-1" />
-                                        Phone Number
+                                        Phone Number *
                                     </label>
                                     <input
+                                        id="phone"
+                                        name="phone"
                                         type="tel"
                                         value={address.phone}
                                         onChange={(e) => setAddress({ ...address, phone: e.target.value })}
                                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
                                         placeholder="9876543210"
+                                        disabled={isProcessing}
+                                        required
+                                        autoComplete="tel"
                                     />
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
                                         <Mail className="w-4 h-4 inline mr-1" />
                                         Email
                                     </label>
                                     <input
+                                        id="email"
+                                        name="email"
                                         type="email"
                                         value={address.email}
                                         onChange={(e) => setAddress({ ...address, email: e.target.value })}
                                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
                                         placeholder="john@example.com"
+                                        disabled={isProcessing}
+                                        autoComplete="email"
                                     />
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Address Line 1
+                                    <label htmlFor="addressLine1" className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Address Line 1 *
                                     </label>
                                     <input
+                                        id="addressLine1"
+                                        name="addressLine1"
                                         type="text"
                                         value={address.addressLine1}
                                         onChange={(e) => setAddress({ ...address, addressLine1: e.target.value })}
                                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
                                         placeholder="House no., Building name"
+                                        disabled={isProcessing}
+                                        required
+                                        autoComplete="address-line1"
                                     />
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    <label htmlFor="addressLine2" className="block text-sm font-semibold text-slate-700 mb-2">
                                         Address Line 2
                                     </label>
                                     <input
+                                        id="addressLine2"
+                                        name="addressLine2"
                                         type="text"
                                         value={address.addressLine2}
                                         onChange={(e) => setAddress({ ...address, addressLine2: e.target.value })}
                                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
                                         placeholder="Road name, Area, Colony (Optional)"
+                                        disabled={isProcessing}
+                                        autoComplete="address-line2"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                        City
+                                    <label htmlFor="city" className="block text-sm font-semibold text-slate-700 mb-2">
+                                        City *
                                     </label>
                                     <input
+                                        id="city"
+                                        name="city"
                                         type="text"
                                         value={address.city}
                                         onChange={(e) => setAddress({ ...address, city: e.target.value })}
                                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
                                         placeholder="Mumbai"
+                                        disabled={isProcessing}
+                                        required
+                                        autoComplete="address-level2"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    <label htmlFor="state" className="block text-sm font-semibold text-slate-700 mb-2">
                                         State
                                     </label>
                                     <input
+                                        id="state"
+                                        name="state"
                                         type="text"
                                         value={address.state}
                                         onChange={(e) => setAddress({ ...address, state: e.target.value })}
                                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
                                         placeholder="Maharashtra"
+                                        disabled={isProcessing}
+                                        autoComplete="address-level1"
                                     />
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Pincode
+                                    <label htmlFor="pincode" className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Pincode *
                                     </label>
                                     <input
+                                        id="pincode"
+                                        name="pincode"
                                         type="text"
                                         value={address.pincode}
                                         onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
                                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none"
                                         placeholder="400001"
+                                        disabled={isProcessing}
+                                        required
+                                        autoComplete="postal-code"
                                     />
                                 </div>
-                            </div>
+                            </form>
                         </motion.div>
                     </div>
 
@@ -309,20 +408,26 @@ export default function Checkout() {
                             </div>
 
                             {/* Payment Button */}
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                                    <CreditCard className="w-4 h-4" />
-                                    Payment
-                                </h3>
-                                <RazorpayPayment
-                                    amount={Math.round(total)}
-                                    onSuccess={handlePaymentSuccess}
-                                    onFailure={handlePaymentFailure}
-                                />
-                            </div>
+                            <button
+                                onClick={handlePayment}
+                                disabled={isProcessing}
+                                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-orange-500/30 transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Lock className="w-4 h-4" />
+                                        Pay {formatPrice(total)}
+                                    </>
+                                )}
+                            </button>
 
-                            <p className="text-xs text-slate-600 text-center">
-                                🔒 Secure payment powered by Razorpay
+                            <p className="text-xs text-slate-600 text-center mt-4">
+                                🔒 Secure SSL payment powered by Razorpay
                             </p>
 
                             {deliveryFee === 0 && (

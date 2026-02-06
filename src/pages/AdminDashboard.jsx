@@ -1,19 +1,22 @@
+
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store';
-import axios from 'axios';
+import api from '../api';
 import {
-    Users, ShoppingBag, Store, DollarSign, TrendingUp,
-    Clock, CheckCircle, XCircle, Eye
+    Users, ShoppingBag, Store, DollarSign,
+    Eye
 } from 'lucide-react';
+import AdminAnalytics from './AdminAnalytics';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
-    const { user, token } = useAuthStore();
+    const { user } = useAuthStore();
     const [stats, setStats] = useState(null);
     const [recentOrders, setRecentOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('overview');
 
     useEffect(() => {
         if (!user || user.role !== 'admin') {
@@ -26,10 +29,7 @@ export default function AdminDashboard() {
 
     const fetchDashboardData = async () => {
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const response = await axios.get(`${API_URL}/api/admin/dashboard/stats`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const response = await api.get('/admin/dashboard/stats');
             setStats(response.data.stats);
             setRecentOrders(response.data.recentOrders);
             setLoading(false);
@@ -47,6 +47,82 @@ export default function AdminDashboard() {
         );
     }
 
+    const tabs = [
+        { id: 'overview', label: 'Overview' },
+        { id: 'analytics', label: 'Analytics' },
+    ];
+
+    return (
+        <div className="min-h-screen pt-20 pb-20 px-4 bg-gradient-to-br from-slate-50 to-slate-100">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4"
+                >
+                    <div>
+                        <h1 className="text-5xl font-bold text-slate-900 mb-2">Admin Dashboard</h1>
+                        <p className="text-slate-600">Manage your food ordering platform</p>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex gap-6 border-b border-slate-200">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`pb-2 px-1 text-lg font-medium transition-colors relative ${activeTab === tab.id
+                                    ? 'text-blue-600'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                {tab.label}
+                                {activeTab === tab.id && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                                    />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </motion.div>
+
+                {/* CONTENT */}
+                <AnimatePresence mode="wait">
+                    {activeTab === 'overview' && (
+                        <motion.div
+                            key="overview"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <StatsGrid stats={stats} />
+                            <QuickActions navigate={navigate} />
+                            <RecentOrders recentOrders={recentOrders} />
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'analytics' && (
+                        <motion.div
+                            key="analytics"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <AdminAnalytics />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+}
+
+function StatsGrid({ stats }) {
     const getColorClasses = (color) => {
         const colorMap = {
             blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
@@ -65,140 +141,157 @@ export default function AdminDashboard() {
     ];
 
     return (
-        <div className="min-h-screen pt-20 pb-20 px-4 bg-gradient-to-br from-slate-50 to-slate-100">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-10"
-                >
-                    <h1 className="text-5xl font-bold text-slate-900 mb-2">Admin Dashboard</h1>
-                    <p className="text-slate-600">Manage your food ordering platform</p>
-                </motion.div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    {statCards.map((stat, index) => {
-                        const colors = getColorClasses(stat.color);
-                        return (
-                            <motion.div
-                                key={stat.title}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className="glass-card p-6"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-slate-600 mb-1">{stat.title}</p>
-                                        <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
-                                    </div>
-                                    <div className={`p-4 rounded-full ${colors.bg}`}>
-                                        <stat.icon className={`w-8 h-8 ${colors.text}`} />
-                                    </div>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => navigate('/admin/users')}
-                        className="glass-card p-6 text-left hover:shadow-lg transition-shadow"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {statCards.map((stat, index) => {
+                const colors = getColorClasses(stat.color);
+                return (
+                    <motion.div
+                        key={stat.title}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="glass-card p-6"
                     >
-                        <Users className="w-10 h-10 text-blue-600 mb-3" />
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">Manage Users</h3>
-                        <p className="text-slate-600">View and manage all users</p>
-                    </motion.button>
-
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => navigate('/admin/restaurants')}
-                        className="glass-card p-6 text-left hover:shadow-lg transition-shadow"
-                    >
-                        <Store className="w-10 h-10 text-green-600 mb-3" />
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">Restaurants</h3>
-                        <p className="text-slate-600">Approve and manage restaurants</p>
-                    </motion.button>
-
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => navigate('/admin/orders')}
-                        className="glass-card p-6 text-left hover:shadow-lg transition-shadow"
-                    >
-                        <ShoppingBag className="w-10 h-10 text-orange-600 mb-3" />
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">Orders</h3>
-                        <p className="text-slate-600">Track and manage orders</p>
-                    </motion.button>
-
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => navigate('/admin/onboarding')}
-                        className="glass-card p-6 text-left hover:shadow-lg transition-shadow bg-gradient-to-br from-blue-50 to-purple-50"
-                    >
-                        <div className="flex items-center gap-2 mb-3">
-                            <Store className="w-10 h-10 text-purple-600" />
-                            <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full">NEW</span>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-slate-600 mb-1">{stat.title}</p>
+                                <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+                            </div>
+                            <div className={`p-4 rounded-full ${colors.bg}`}>
+                                <stat.icon className={`w-8 h-8 ${colors.text}`} />
+                            </div>
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">Add Restaurant</h3>
-                        <p className="text-slate-600">Onboard a new partner</p>
-                    </motion.button>
-                </div>
-
-                {/* Recent Orders */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="glass-card p-6"
-                >
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6">Recent Orders</h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-slate-200">
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Order ID</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Customer</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Restaurant</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Amount</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Status</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {recentOrders.map((order) => (
-                                    <tr key={order._id} className="border-b border-slate-100 hover:bg-slate-50">
-                                        <td className="py-3 px-4 text-sm">#{order._id.slice(-6)}</td>
-                                        <td className="py-3 px-4 text-sm">{order.user?.name || 'N/A'}</td>
-                                        <td className="py-3 px-4 text-sm">{order.hotel?.name || 'N/A'}</td>
-                                        <td className="py-3 px-4 text-sm font-semibold">₹{order.totalAmount}</td>
-                                        <td className="py-3 px-4 text-sm">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                                                order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-blue-100 text-blue-700'
-                                                }`}>
-                                                {order.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-4 text-sm">
-                                            <button className="text-blue-600 hover:text-blue-700">
-                                                <Eye className="w-5 h-5" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </motion.div>
-            </div>
+                    </motion.div>
+                );
+            })}
         </div>
+    );
+}
+
+function QuickActions({ navigate }) {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/admin/users')}
+                className="glass-card p-6 text-left hover:shadow-lg transition-shadow"
+            >
+                <Users className="w-10 h-10 text-blue-600 mb-3" />
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Manage Users</h3>
+                <p className="text-slate-600">View and manage all users</p>
+            </motion.button>
+
+            <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/admin/restaurants')}
+                className="glass-card p-6 text-left hover:shadow-lg transition-shadow"
+            >
+                <Store className="w-10 h-10 text-green-600 mb-3" />
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Restaurants</h3>
+                <p className="text-slate-600">Approve and manage restaurants</p>
+            </motion.button>
+
+            <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/admin/orders')}
+                className="glass-card p-6 text-left hover:shadow-lg transition-shadow"
+            >
+                <ShoppingBag className="w-10 h-10 text-orange-600 mb-3" />
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Orders</h3>
+                <p className="text-slate-600">Track and manage orders</p>
+            </motion.button>
+
+            <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/admin/payments')}
+                className="glass-card p-6 text-left hover:shadow-lg transition-shadow bg-gradient-to-br from-teal-50 to-emerald-50"
+            >
+                <div className="flex items-center gap-2 mb-3">
+                    <DollarSign className="w-10 h-10 text-emerald-600" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Payments</h3>
+                <p className="text-slate-600">Reconcile & Refunds</p>
+            </motion.button>
+
+            <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/admin/onboarding')}
+                className="glass-card p-6 text-left hover:shadow-lg transition-shadow bg-gradient-to-br from-blue-50 to-purple-50"
+            >
+                <div className="flex items-center gap-2 mb-3">
+                    <Store className="w-10 h-10 text-purple-600" />
+                    <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full">NEW</span>
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Add Restaurant</h3>
+                <p className="text-slate-600">Onboard a new partner</p>
+            </motion.button>
+
+            <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/admin/restaurants?tab=requests')} // Navigate to Requests tab
+                className="glass-card p-6 text-left hover:shadow-lg transition-shadow bg-gradient-to-br from-orange-50 to-red-50"
+            >
+                <div className="flex items-center gap-2 mb-3">
+                    <Store className="w-10 h-10 text-orange-600" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Requests</h3>
+                <p className="text-slate-600">Approve new signups</p>
+            </motion.button>
+        </div>
+    );
+}
+
+function RecentOrders({ recentOrders }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="glass-card p-6"
+        >
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Recent Orders</h2>
+            <div className="overflow-x-auto">
+                <table className="w-full">
+                    <thead>
+                        <tr className="border-b border-slate-200">
+                            <th className="text-left py-3 px-4 font-semibold text-slate-700">Order ID</th>
+                            <th className="text-left py-3 px-4 font-semibold text-slate-700">Customer</th>
+                            <th className="text-left py-3 px-4 font-semibold text-slate-700">Restaurant</th>
+                            <th className="text-left py-3 px-4 font-semibold text-slate-700">Amount</th>
+                            <th className="text-left py-3 px-4 font-semibold text-slate-700">Status</th>
+                            <th className="text-left py-3 px-4 font-semibold text-slate-700">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {recentOrders.map((order) => (
+                            <tr key={order._id} className="border-b border-slate-100 hover:bg-slate-50">
+                                <td className="py-3 px-4 text-sm">#{order._id.slice(-6)}</td>
+                                <td className="py-3 px-4 text-sm">{order.user?.name || 'N/A'}</td>
+                                <td className="py-3 px-4 text-sm">{order.hotel?.name || 'N/A'}</td>
+                                <td className="py-3 px-4 text-sm font-semibold">₹{order.totalAmount}</td>
+                                <td className="py-3 px-4 text-sm">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                            'bg-blue-100 text-blue-700'
+                                        }`}>
+                                        {order.status}
+                                    </span>
+                                </td>
+                                <td className="py-3 px-4 text-sm">
+                                    <button className="text-blue-600 hover:text-blue-700">
+                                        <Eye className="w-5 h-5" />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </motion.div>
     );
 }

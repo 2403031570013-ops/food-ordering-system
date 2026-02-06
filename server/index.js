@@ -1,15 +1,45 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
 app.set('trust proxy', 1); // Trust Render's proxy for HTTPS
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+const cors = require("cors");
+app.use(cors()); // CORS must be first
+
+const helmet = require('helmet');
+const xss = require('xss-clean');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
+const hpp = require('hpp');
+
+// Security Headers
+app.use(helmet());
+
+// Rate Limiting (Global: 100 requests per 10 mins)
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 100,
+  message: 'Too many requests from this IP, please try again later.'
+});
+app.use('/api', limiter);
+
+// Body Parser
+app.use(express.json({ limit: '10kb' })); // Body limit is strict to prevent DoS
 app.use(express.urlencoded({ extended: true }));
+
+// Data Sanitization against NoSQL Injection
+app.use(mongoSanitize());
+
+// Data Sanitization against XSS
+app.use(xss());
+
+// Prevent Parameter Pollution
+app.use(hpp());
+
+app.use('/invoices', express.static('public/invoices')); // Serve invoices
 
 // Passport Config
 require('./config/passport');
@@ -33,7 +63,11 @@ const connectDB = async () => {
   }
 };
 
-connectDB();
+const { seedDemoData } = require('./seed/demoData');
+
+connectDB().then(() => {
+  seedDemoData();
+});
 
 // Health Check Route
 app.get("/", (req, res) => {
@@ -48,8 +82,11 @@ app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/payment", require("./routes/paymentRoutes")); // Razorpay Payment Routes
 app.use("/api/admin", require("./routes/adminRoutes")); // Admin Routes
 app.use("/api/onboarding", require("./routes/onboardingRoutes")); // Restaurant Onboarding
+console.log("Mounting Subscription Routes...");
 app.use("/api/subscriptions", require("./routes/subscriptionRoutes")); // Premium Subscriptions
+app.use("/api/restaurant", require("./routes/restaurantRoutes")); // Restaurant Order Management
 
+// Error Handling Middleware
 // Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error("🔥 SERVER ERROR:", err);
@@ -57,11 +94,11 @@ app.use((err, req, res, next) => {
     success: false,
     message: err.message || "Internal Server Error",
     code: err.code || "UNKNOWN_ERROR",
-    debug_env: {
-      secret_len: process.env.GOOGLE_CLIENT_SECRET ? process.env.GOOGLE_CLIENT_SECRET.length : 0,
-      secret_end: process.env.GOOGLE_CLIENT_SECRET ? process.env.GOOGLE_CLIENT_SECRET.slice(-3) : "N/A"
-    },
-    details: err.stack,
+    // In production, do NOT expose stack traces or env variables
+    ...(process.env.NODE_ENV === 'development' && { details: err.stack }),
+    error_name: err.name,
+    error_message: err.message,
+    status_code: err.status || 500,
   });
 });
 

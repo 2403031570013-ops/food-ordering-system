@@ -1,4 +1,5 @@
 const express = require('express');
+console.log("Loading Subscription Routes File...");
 const router = express.Router();
 const Subscription = require('../models/Subscription');
 const User = require('../models/User');
@@ -86,10 +87,10 @@ router.get('/my-subscription', protect, async (req, res) => {
     }
 });
 
-// @route   POST /api/subscriptions/upgrade
-// @desc    Upgrade to Lite or Pro plan
+// @route   POST /api/subscriptions/initiate OR /upgrade
+// @desc    Initiate subscription upgrade (Create Razorpay Order)
 // @access  Private
-router.post('/upgrade', protect, async (req, res) => {
+router.post(['/initiate', '/upgrade'], protect, async (req, res) => {
     try {
         const { plan } = req.body; // 'lite' or 'pro'
 
@@ -103,37 +104,48 @@ router.post('/upgrade', protect, async (req, res) => {
 
         const planConfig = PLANS[plan];
 
+        // Fix Receipt Length Issue (Max 40 chars)
+        // sub (3) + _ (1) + userId (last 6) + _ (1) + timestamp (13) = 24 chars
+        const shortNode = req.user._id.toString().slice(-6);
+        const receiptId = `sub_${shortNode}_${Date.now()}`;
+
         // Create Razorpay order
         const options = {
             amount: planConfig.price * 100, // Convert to paise
             currency: 'INR',
-            receipt: `sub_${req.user._id}_${Date.now()}`,
+            receipt: receiptId,
             notes: {
                 userId: req.user._id.toString(),
                 plan: plan,
-                type: 'subscription',
+                type: 'subscription_upgrade',
             },
         };
 
         const order = await razorpay.orders.create(options);
 
         res.json({
+            success: true,
+            key: process.env.RAZORPAY_KEY_ID, // Send key to frontend
             orderId: order.id,
             amount: order.amount,
             currency: order.currency,
             plan: plan,
             planName: planConfig.name,
+            description: `Upgrade to ${planConfig.name}`,
         });
     } catch (error) {
-        console.error('Upgrade plan error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Initiate subscription error:', error);
+        res.status(500).json({
+            message: 'Failed to initiate payment',
+            error: error.message
+        });
     }
 });
 
-// @route   POST /api/subscriptions/verify-payment
-// @desc    Verify subscription payment and activate
+// @route   POST /api/subscriptions/verify
+// @desc    Verify payment and activate subscription (Client-side callback)
 // @access  Private
-router.post('/verify-payment', protect, async (req, res) => {
+router.post('/verify', protect, async (req, res) => {
     try {
         const {
             razorpay_order_id,
@@ -142,7 +154,7 @@ router.post('/verify-payment', protect, async (req, res) => {
             plan,
         } = req.body;
 
-        // Verify signature (same as payment verification)
+        // Verify signature
         const crypto = require('crypto');
         const sign = razorpay_order_id + '|' + razorpay_payment_id;
         const expectedSign = crypto
@@ -154,52 +166,91 @@ router.post('/verify-payment', protect, async (req, res) => {
             return res.status(400).json({ message: 'Invalid payment signature' });
         }
 
-        // Payment verified! Activate subscription
+        // Payment valid - Activate Subscription
         const planConfig = PLANS[plan];
-        const endDate = new Date();
-        endDate.setMonth(endDate.getMonth() + 1); // 1 month subscription
 
+        // Calculate dates
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(startDate.getDate() + 30); // 30 days validity
+
+        // 1. Update/Create Subscription Document
         let subscription = await Subscription.findOne({ user: req.user._id });
 
-        if (subscription) {
-            // Update existing subscription
-            subscription.plan = plan;
-            subscription.price = planConfig.price;
-            subscription.status = 'active';
-            subscription.startDate = new Date();
-            subscription.endDate = endDate;
-            subscription.paymentId = razorpay_payment_id;
-            subscription.features = planConfig.features;
-        } else {
-            // Create new subscription
-            subscription = new Subscription({
-                user: req.user._id,
-                plan: plan,
-                price: planConfig.price,
-                status: 'active',
-                startDate: new Date(),
-                endDate: endDate,
-                paymentId: razorpay_payment_id,
-                features: planConfig.features,
-            });
+        if (!subscription) {
+            subscription = new Subscription({ user: req.user._id });
         }
+
+        subscription.plan = plan;
+        subscription.price = planConfig.price;
+        subscription.status = 'active';
+        subscription.startDate = startDate;
+        subscription.endDate = endDate;
+        subscription.paymentId = razorpay_payment_id;
+        subscription.features = planConfig.features;
+        subscription.autoRenew = true;
 
         await subscription.save();
 
-        // Update user subscription reference
+        // 2. Update User Document (Redundancy as requested)
         await User.findByIdAndUpdate(req.user._id, {
-            subscription: subscription._id,
             subscriptionPlan: plan,
+            subscriptionStatus: 'active',
+            subscriptionExpiry: endDate,
+            razorpaySubscriptionId: razorpay_payment_id // Using payment ID as proxy for now
         });
 
         res.json({
             success: true,
-            message: `Successfully upgraded to ${planConfig.name}!`,
+            message: `Successfully upgraded to ${planConfig.name}`,
             subscription,
         });
     } catch (error) {
-        console.error('Verify subscription payment error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Verify payment error:', error);
+        res.status(500).json({ message: 'Payment verification failed' });
+    }
+});
+
+// @route   POST /api/subscriptions/webhook
+// @desc    Razorpay Webhook for payment.captured
+// @access  Public
+router.post('/webhook', async (req, res) => {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET; // Must set this in .env
+
+    // If no secret, we can't verify (or strict mode off)
+    if (!secret) {
+        return res.status(200).send('Webhook received but no secret config');
+    }
+
+    const crypto = require('crypto');
+    const shasum = crypto.createHmac('sha256', secret);
+    shasum.update(JSON.stringify(req.body));
+    const digest = shasum.digest('hex');
+
+    if (digest === req.headers['x-razorpay-signature']) {
+        // Event Valid
+        const event = req.body.event;
+        const payload = req.body.payload;
+
+        if (event === 'payment.captured') {
+            const payment = payload.payment.entity;
+            const notes = payment.notes;
+
+            if (notes.type === 'subscription_upgrade') {
+                const userId = notes.userId;
+                const plan = notes.plan;
+
+                // Perform activation logic here (similar to verify)
+                // Since verify is usually called by client, this is backup/async
+                console.log(`Webhook: Payment captured for User ${userId} Plan ${plan}`);
+
+                // Logic to update DB if not already active
+                // For now, we assume verify route handles it mostly.
+            }
+        }
+        res.json({ status: 'ok' });
+    } else {
+        res.status(400).json({ status: 'invalid_signature' });
     }
 });
 

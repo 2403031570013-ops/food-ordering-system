@@ -16,7 +16,7 @@ export default function Cart() {
 
   const handleCheckout = () => {
     if (!user) {
-      navigate('/login');
+      navigate('/login', { state: { from: '/checkout' } });
       return;
     }
     navigate('/checkout');

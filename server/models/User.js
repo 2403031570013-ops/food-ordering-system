@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
+    // Debug Log
+    // console.log("Initializing User Schema with minlength 6");
     name: {
       type: String,
       required: [true, 'Please provide a name'],
@@ -22,7 +24,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Please provide a password'],
-      minlength: 8,
+      minlength: 6,
       select: false, // Don't return password by default
     },
     phone: {
@@ -42,8 +44,15 @@ const userSchema = new mongoose.Schema(
     ],
     role: {
       type: String,
-      enum: ['user', 'admin'],
+      enum: ['user', 'restaurant', 'admin'],
       default: 'user',
+    },
+    firstLogin: {
+      type: Boolean,
+      default: true,
+    },
+    googleId: {
+      type: String, // Store Google ID
     },
     status: {
       type: String,
@@ -53,6 +62,22 @@ const userSchema = new mongoose.Schema(
     preferences: {
       notifications: { type: Boolean, default: true },
       newsletter: { type: Boolean, default: false },
+    },
+    subscriptionPlan: {
+      type: String,
+      enum: ['free', 'lite', 'pro'],
+      default: 'free',
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
+    },
+    subscriptionExpiry: {
+      type: Date,
+    },
+    razorpaySubscriptionId: {
+      type: String,
     },
   },
   { timestamps: true }

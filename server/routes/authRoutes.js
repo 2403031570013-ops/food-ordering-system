@@ -87,6 +87,7 @@ router.post(
           name: user.name,
           email: user.email,
           role: user.role,
+          firstLogin: true, // New users always first login
         },
       });
     } catch (error) {
@@ -100,9 +101,19 @@ router.post(
   }
 );
 
+const rateLimit = require('express-rate-limit');
+
+// Login Rate Limiter (5 attempts per 15 mins)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many login attempts. Please try again after 15 minutes.'
+});
+
 // Login User
 router.post(
   '/login',
+  loginLimiter,
   [
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').notEmpty().withMessage('Password is required'),
@@ -139,6 +150,7 @@ router.post(
           name: user.name,
           email: user.email,
           role: user.role,
+          firstLogin: user.firstLogin,
         },
       });
     } catch (error) {
@@ -277,6 +289,43 @@ router.post(
   }
 );
 
+// @route   PUT /api/auth/set-role
+// @desc    Update user role after first login
+// @access  Private
+const { protect } = require('../middleware/auth');
+router.put('/set-role', protect, async (req, res) => {
+  try {
+    const { role } = req.body;
+
+    if (!['user', 'restaurant', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.role = role;
+    user.firstLogin = false;
+    await user.save();
+
+    res.json({
+      message: 'Role updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        firstLogin: user.firstLogin,
+      }
+    });
+  } catch (error) {
+    console.error('Set role error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 console.log('✅ Auth Routes Registered: POST /register, POST /login, POST /forgot-password, POST /reset-password, GET /google');
 
 // Google Auth Routes
@@ -294,7 +343,9 @@ router.get(
       id: req.user._id,
       name: req.user.name,
       email: req.user.email,
-      role: req.user.role
+      email: req.user.email,
+      role: req.user.role,
+      firstLogin: req.user.firstLogin
     }))}`);
   }
 );

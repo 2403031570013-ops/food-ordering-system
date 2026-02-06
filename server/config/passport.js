@@ -15,7 +15,7 @@ if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
                 clientSecret: GOOGLE_CLIENT_SECRET,
                 callbackURL: process.env.NODE_ENV === 'production'
                     ? "https://food-ordering-system-x6mu.onrender.com/api/auth/google/callback"
-                    : "/api/auth/google/callback",
+                    : "http://localhost:5000/api/auth/google/callback",
                 proxy: true // Important for Render deployment
             },
             async (accessToken, refreshToken, profile, done) => {
@@ -36,6 +36,9 @@ if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
                         name: profile.displayName,
                         email: profile.emails[0].value,
                         password: randomPassword,
+                        firstLogin: true,
+                        googleId: profile.id,
+                        role: 'user', // Default role for now, but firstLogin will force selection
                     });
 
                     await user.save();

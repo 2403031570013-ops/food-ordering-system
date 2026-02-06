@@ -7,6 +7,11 @@ const hotelSchema = new mongoose.Schema(
       required: [true, 'Please provide hotel/restaurant name'],
       trim: true,
     },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     owner: {
       type: String, // Owner name for onboarding
     },
@@ -16,6 +21,10 @@ const hotelSchema = new mongoose.Schema(
     image: {
       type: String,
       default: 'https://via.placeholder.com/400x300?text=Restaurant',
+    },
+    bgImage: {
+      type: String,
+      default: 'https://via.placeholder.com/1200x400?text=Restaurant+Banner',
     },
     address: {
       street: String,
@@ -97,6 +106,10 @@ const hotelSchema = new mongoose.Schema(
       type: String,
       enum: ['basic', 'premium', 'enterprise'],
       default: 'basic',
+    },
+    isOpen: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true }

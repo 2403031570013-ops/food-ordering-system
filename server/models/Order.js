@@ -39,17 +39,41 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    paymentId: String,
+    paymentId: String, // Kept for backward compatibility, but use razorpayPaymentId
+    razorpayOrderId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    razorpayPaymentId: String,
+    razorpaySignature: String,
     paymentStatus: {
       type: String,
-      enum: ['pending', 'completed', 'failed'],
+      enum: ['pending', 'paid', 'failed', 'refunded'],
       default: 'pending',
     },
+    isDuplicatePayment: {
+      type: Boolean,
+      default: false,
+    },
+    refundId: String,
+    refundAmount: Number,
+    refundStatus: String,
+    invoiceNumber: String,
+    invoiceUrl: String,
+    invoiceGeneratedAt: Date,
+    taxPrice: { type: Number, default: 0 },
+    subtotal: { type: Number },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'preparing', 'out-for-delivery', 'delivered', 'cancelled'],
+      enum: ['pending', 'accepted', 'rejected', 'preparing', 'ready', 'out-for-delivery', 'delivered', 'cancelled'],
       default: 'pending',
     },
+    rejectionReason: {
+      type: String,
+    },
+    acceptedAt: Date,
+    rejectedAt: Date,
   },
   { timestamps: true }
 );
