@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store';
 import axios from 'axios';
+import api from '../api';
 import {
     Check, X, Crown, Zap, Shield, Star, TrendingUp,
     Headphones, Gift, Sparkles
@@ -34,10 +35,7 @@ export default function Pricing() {
 
     const fetchCurrentSubscription = async () => {
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const response = await axios.get(`${API_URL}/api/subscriptions/my-subscription`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const response = await api.get('/subscriptions/my-subscription');
             setCurrentSubscription(response.data.subscription);
         } catch (error) {
             console.error('Error fetching subscription:', error);
@@ -62,14 +60,8 @@ export default function Pricing() {
         setSelectedPlan(plan);
 
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
             // 1. Initiate Subscription (Create Order)
-            const orderResponse = await axios.post(
-                `${API_URL}/api/subscriptions/initiate`,
-                { plan },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const orderResponse = await api.post('/subscriptions/initiate', { plan });
 
             if (!orderResponse.data.success) {
                 throw new Error('Failed to initiate subscription');
@@ -95,16 +87,12 @@ export default function Pricing() {
                 handler: async function (response) {
                     // 3. Verify Payment
                     try {
-                        const verifyResponse = await axios.post(
-                            `${API_URL}/api/subscriptions/verify`,
-                            {
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                plan: plan,
-                            },
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
+                        const verifyResponse = await api.post('/subscriptions/verify', {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            plan: plan,
+                        });
 
                         if (verifyResponse.data.success) {
                             alert(`🎉 Success! You are now on ${planName}.`);
