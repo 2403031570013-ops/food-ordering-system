@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api from '../api';
 import { Store, User, Mail, Phone, MapPin, FileText, CheckCircle } from 'lucide-react';
 
 export default function RestaurantOnboarding() {
@@ -58,8 +59,7 @@ export default function RestaurantOnboarding() {
         }
 
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const response = await axios.post(`${API_URL}/api/onboarding/restaurant`, formData);
+            const response = await api.post('/onboarding/restaurant', formData);
 
             setSuccess(true);
             setTimeout(() => {
