@@ -15,7 +15,7 @@ const razorpay = new Razorpay({
 // Plan configurations
 const PLANS = {
     free: {
-        name: 'FoodHub Free',
+        name: 'FoodHub Now Free',
         price: 0,
         features: {
             COD: false,
@@ -24,7 +24,7 @@ const PLANS = {
         },
     },
     lite: {
-        name: 'FoodHub Lite',
+        name: 'FoodHub Now Lite',
         price: 99,
         features: {
             COD: true,

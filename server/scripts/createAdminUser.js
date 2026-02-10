@@ -25,7 +25,7 @@ const createAdmin = async () => {
         } else {
             console.log('Admin user does not exist. Creating new admin...');
             adminUser = new User({
-                name: 'FoodHub Admin',
+                name: 'FoodHub Now Admin',
                 email: email,
                 password: password,
                 role: 'admin',

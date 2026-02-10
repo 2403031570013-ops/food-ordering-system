@@ -25,9 +25,10 @@ const generateInvoice = async (order, user) => {
             // --- HEADER ---
             doc.fillColor('#444444')
                 .fontSize(20)
-                .text('FoodHub Invoice', 50, 57)
-                .fontSize(10)
-                .text('FoodHub Inc.', 200, 50, { align: 'right' })
+                .text('FoodHub Now Invoice', 50, 57)
+                .fillColor('#444444')
+                .fontSize(20)
+                .text('FoodHub Now Inc.', 200, 50, { align: 'right' })
                 .text('123 Food Street', 200, 65, { align: 'right' })
                 .text('Mumbai, India, 400001', 200, 80, { align: 'right' })
                 .moveDown();
@@ -87,7 +88,7 @@ const generateInvoice = async (order, user) => {
 
             // --- FOOTER ---
             doc.fontSize(10).fillColor('gray')
-                .text('Thank you for ordering with FoodHub!', 50, 700, { align: 'center', width: 500 });
+                .text('Thank you for ordering with FoodHub Now!', 50, 700, { align: 'center', width: 500 });
 
 
             doc.end();

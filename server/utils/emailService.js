@@ -17,7 +17,7 @@ const sendEmail = async (options) => {
     });
 
     const mailOptions = {
-        from: `FoodHub <${process.env.EMAIL_USER}>`,
+        from: `FoodHub Now <${process.env.EMAIL_USER}>`,
         to: options.email,
         subject: options.subject,
         text: options.message,

@@ -306,7 +306,7 @@ router.post('/webhook', async (req, res) => {
                         await sendEmail({
                             email: user.email,
                             subject: `Order Confirmation & Invoice - ${invoiceData.invoiceNumber}`,
-                            message: `Hi ${user.name},\n\nThank you for your order! Please find your invoice attached.\n\nRegards,\nFoodHub Team`,
+                            message: `Hi ${user.name},\n\nThank you for your order! Please find your invoice attached.\n\nRegards,\nFoodHub Now Team`,
                             html: `<h1>Thank You for Your Order!</h1><p>Hi ${user.name},</p><p>We have received your payment. Your order is now being prepared.</p><p>Please find your invoice attached.</p>`,
                             attachments: [
                                 {
