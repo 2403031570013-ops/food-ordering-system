@@ -8,7 +8,7 @@ export default function Watermark() {
                         className="text-6xl md:text-8xl font-black text-slate-800 m-8 md:m-16 tracking-tighter"
                         style={{ fontFamily: 'Inter, sans-serif' }}
                     >
-                        FoodHub
+                        FoodHub Now
                     </div>
                 ))}
             </div>

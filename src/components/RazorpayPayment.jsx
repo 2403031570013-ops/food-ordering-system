@@ -44,7 +44,7 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure }) => {
                 key: key, // Razorpay Key ID
                 amount: orderAmount, // Amount in paise
                 currency: currency,
-                name: 'FoodHub',
+                name: 'FoodHub Now',
                 description: 'Food Order Payment',
                 order_id: orderId,
                 handler: async function (response) {

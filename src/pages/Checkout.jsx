@@ -25,10 +25,39 @@ export default function Checkout() {
     });
 
     // Calculate totals
+    const [couponCode, setCouponCode] = useState('');
+    const [couponApplied, setCouponApplied] = useState(null);
+    const [couponError, setCouponError] = useState('');
+    const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const deliveryFee = subtotal > 200 ? 0 : 40;
     const tax = subtotal * 0.05;
-    const total = subtotal + deliveryFee + tax;
+    const discount = couponApplied ? couponApplied.amount : 0;
+    const total = Math.max(0, subtotal + deliveryFee + tax - discount);
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode) return;
+        setIsValidatingCoupon(true);
+        setCouponError('');
+        try {
+            const res = await api.post('/coupons/validate', { code: couponCode });
+            if (res.data.valid) {
+                let discountAmount = 0;
+                if (res.data.discountType === 'PERCENTAGE') {
+                    discountAmount = (subtotal * res.data.value) / 100;
+                    if (res.data.maxDiscount) discountAmount = Math.min(discountAmount, res.data.maxDiscount);
+                }
+                setCouponApplied({ code: res.data.code, amount: discountAmount });
+                setCouponError('');
+            }
+        } catch (err) {
+            setCouponApplied(null);
+            setCouponError(err.response?.data?.message || 'Invalid coupon');
+        } finally {
+            setIsValidatingCoupon(false);
+        }
+    };
 
     const loadRazorpayScript = () => {
         return new Promise((resolve) => {
@@ -42,6 +71,7 @@ export default function Checkout() {
 
     // State to store created Order ID for retries (Idempotency)
     const [existingOrderId, setExistingOrderId] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState('ONLINE');
 
     const handlePayment = async () => {
         if (items.length === 0) return;
@@ -55,14 +85,7 @@ export default function Checkout() {
         setIsProcessing(true);
 
         try {
-            // 1. Load Script
-            const scriptLoaded = await loadRazorpayScript();
-            if (!scriptLoaded) {
-                throw new Error('Razorpay SDK failed to load. Check your internet connection.');
-            }
-
-            // 2. Initiate Order (Create DB Order + Razorpay Order)
-            // If we already initiated an order for this session, reuse it.
+            // Prepare Order Payload
             const orderPayload = {
                 items: items.map(item => ({
                     food: item._id || item.id,
@@ -81,9 +104,32 @@ export default function Checkout() {
                 },
                 totalAmount: total,
                 user: user?.id || user?._id,
-                orderId: existingOrderId // Pass existing ID if available
+                orderId: existingOrderId, // Pass existing ID if available
+                paymentMethod: paymentMethod, // Pass selected method
+                couponCode: couponApplied?.code,
+                discountAmount: discount
             };
 
+            // CASE 1: COD Order
+            if (paymentMethod === 'COD') {
+                const res = await api.post('/payment/initiate', orderPayload);
+                if (res.data.success) {
+                    clearCart();
+                    navigate('/order-success');
+                } else {
+                    throw new Error(res.data.message || 'Failed to place COD order');
+                }
+                return;
+            }
+
+            // CASE 2: ONLINE Payment (Razorpay)
+            // 1. Load Script
+            const scriptLoaded = await loadRazorpayScript();
+            if (!scriptLoaded) {
+                throw new Error('Razorpay SDK failed to load. Check your internet connection.');
+            }
+
+            // 2. Initiate Order (Create DB Order + Razorpay Order)
             const initiateRes = await api.post('/payment/initiate', orderPayload);
 
             if (!initiateRes.data.success) {
@@ -106,7 +152,7 @@ export default function Checkout() {
                 key: key,
                 amount: amount,
                 currency: currency,
-                name: 'FoodHub',
+                name: 'FoodHub Now',
                 description: 'Order Payment',
                 order_id: razorpayOrderId,
                 handler: async function (response) {
@@ -397,6 +443,13 @@ export default function Checkout() {
                                     <span className="font-semibold">{formatPrice(tax)}</span>
                                 </div>
 
+                                {discount > 0 && (
+                                    <div className="flex justify-between items-center text-green-600 font-bold">
+                                        <span>Discount ({couponApplied?.code})</span>
+                                        <span>- {formatPrice(discount)}</span>
+                                    </div>
+                                )}
+
                                 <div className="h-px bg-white/20"></div>
 
                                 <div className="flex justify-between items-center text-lg font-bold">
@@ -405,6 +458,75 @@ export default function Checkout() {
                                         {formatPrice(total)}
                                     </span>
                                 </div>
+                            </div>
+
+                            {/* Coupon Selection */}
+                            <div className="mb-6">
+                                <h3 className="font-semibold text-slate-900 mb-2">Have a Coupon?</h3>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={couponCode}
+                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                        placeholder="Enter Coupon Code"
+                                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg uppercase text-sm font-bold"
+                                        disabled={!!couponApplied}
+                                    />
+                                    {couponApplied ? (
+                                        <button onClick={() => { setCouponApplied(null); setCouponCode(''); }} className="text-red-600 font-bold text-sm px-3 hover:bg-red-50 rounded-lg">Remove</button>
+                                    ) : (
+                                        <button onClick={handleApplyCoupon} disabled={!couponCode || isValidatingCoupon} className="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-700 disabled:opacity-50">
+                                            {isValidatingCoupon ? '...' : 'Apply'}
+                                        </button>
+                                    )}
+                                </div>
+                                {couponError && <p className="text-red-500 text-xs mt-1 font-medium">{couponError}</p>}
+                                {couponApplied && <p className="text-green-600 text-xs mt-1 font-bold">Coupon Applied Successfully!</p>}
+                            </div>
+
+                            {/* Payment Method Selection */}
+                            <div className="mb-6 space-y-3">
+                                <h3 className="font-semibold text-slate-900 mb-2">Payment Method</h3>
+
+                                <label className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${paymentMethod === 'ONLINE' ? 'border-orange-500 bg-orange-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value="ONLINE"
+                                        checked={paymentMethod === 'ONLINE'}
+                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500"
+                                    />
+                                    <span className="ml-3 font-medium text-slate-800">Online Payment</span>
+                                    <CreditCard className="ml-auto w-5 h-5 text-slate-500" />
+                                </label>
+
+                                <label className={`relative flex items-center p-3 rounded-lg border-2 transition-all ${paymentMethod === 'COD' ? 'border-orange-500 bg-orange-50' : 'border-slate-200 hover:border-slate-300'} ${user?.subscriptionPlan === 'free' ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'cursor-pointer'}`}>
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value="COD"
+                                        checked={paymentMethod === 'COD'}
+                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500"
+                                        disabled={user?.subscriptionPlan === 'free'}
+                                    />
+                                    <span className="ml-3 font-medium text-slate-800">Cash on Delivery</span>
+                                    {user?.subscriptionPlan === 'free' && (
+                                        <span className="absolute right-3 top-3 bg-slate-800 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                            Lite Plan Only
+                                        </span>
+                                    )}
+                                    {user?.subscriptionPlan !== 'free' && <div className="ml-auto text-green-600 font-bold">₹</div>}
+                                </label>
+                                {user?.subscriptionPlan === 'free' && (
+                                    <div className="text-center bg-blue-50 p-2 rounded-lg border border-blue-100">
+                                        <p className="text-xs text-blue-800 mb-1">COD is locked for Free users.</p>
+                                        <button onClick={() => navigate('/pricing')} className="text-xs font-bold text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 transition-colors">
+                                            Upgrade to Lite (₹99)
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Payment Button */}
@@ -420,14 +542,22 @@ export default function Checkout() {
                                     </>
                                 ) : (
                                     <>
-                                        <Lock className="w-4 h-4" />
-                                        Pay {formatPrice(total)}
+                                        {paymentMethod === 'COD' ? (
+                                            <>
+                                                Place Order via COD
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Lock className="w-4 h-4" />
+                                                Pay {formatPrice(total)}
+                                            </>
+                                        )}
                                     </>
                                 )}
                             </button>
 
                             <p className="text-xs text-slate-600 text-center mt-4">
-                                🔒 Secure SSL payment powered by Razorpay
+                                {paymentMethod === 'COD' ? 'Pay cash upon delivery. No extra charges.' : '🔒 Secure SSL payment powered by Razorpay'}
                             </p>
 
                             {deliveryFee === 0 && (

@@ -24,6 +24,7 @@ const orderSchema = new mongoose.Schema(
           required: true,
           min: 1,
         },
+        image: String,
       },
     ],
     deliveryAddress: {
@@ -39,7 +40,12 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    paymentId: String, // Kept for backward compatibility, but use razorpayPaymentId
+    paymentMethod: {
+      type: String,
+      enum: ['ONLINE', 'COD'],
+      default: 'ONLINE',
+    },
+    paymentId: String, // Kept for backward compatibility
     razorpayOrderId: {
       type: String,
       unique: true,
@@ -49,8 +55,8 @@ const orderSchema = new mongoose.Schema(
     razorpaySignature: String,
     paymentStatus: {
       type: String,
-      enum: ['pending', 'paid', 'failed', 'refunded'],
-      default: 'pending',
+      enum: ['PENDING', 'COMPLETED', 'REFUNDED', 'FAILED', 'pending', 'paid', 'failed', 'refunded'],
+      default: 'PENDING',
     },
     isDuplicatePayment: {
       type: Boolean,
@@ -58,7 +64,11 @@ const orderSchema = new mongoose.Schema(
     },
     refundId: String,
     refundAmount: Number,
-    refundStatus: String,
+    refundStatus: {
+      type: String,
+      enum: ['NONE', 'PROCESSING', 'COMPLETED', 'NOT_REQUIRED'],
+      default: 'NONE',
+    },
     invoiceNumber: String,
     invoiceUrl: String,
     invoiceGeneratedAt: Date,
@@ -66,14 +76,27 @@ const orderSchema = new mongoose.Schema(
     subtotal: { type: Number },
     status: {
       type: String,
-      enum: ['pending', 'accepted', 'rejected', 'preparing', 'ready', 'out-for-delivery', 'delivered', 'cancelled'],
-      default: 'pending',
+      enum: [
+        'PLACED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED',
+        'pending', 'accepted', 'rejected', 'preparing', 'ready', 'out-for-delivery', 'delivered', 'cancelled'
+      ],
+      default: 'PLACED',
     },
+    cancellationReason: String,
     rejectionReason: {
       type: String,
     },
     acceptedAt: Date,
     rejectedAt: Date,
+    couponCode: String,
+    discountAmount: Number,
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5
+    },
+    feedback: String,
+    ratedAt: Date,
   },
   { timestamps: true }
 );

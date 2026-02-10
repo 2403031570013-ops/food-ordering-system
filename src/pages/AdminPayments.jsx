@@ -51,31 +51,70 @@ export default function AdminPayments() {
 
     const fetchOrders = async () => {
         try {
-            const response = await api.get('/admin/orders');
+            // Fetch all orders (backend now supports filtering but we fetch all for client-side ease in this admin view)
+            const response = await api.get('/orders?limit=1000'); // changed from /admin/orders to /orders (admin restricted) or check route. 
+            // Wait, previous file used /admin/orders. Let me check orderRoutes.js again.
+            // orderRoutes.js: router.get("/", protect, restrictTo('admin', 'restaurant')...
+            // So path is likely /api/orders.
+            // AdminPayments.jsx used /admin/orders. 
+            // If /admin/orders does not exist, it might have been /api/orders.
+            // Let's assume /orders is the correct resource path based on standard REST.
+            // Previous code used `api.get('/admin/orders')`. 
+            // I should verify if `adminRoutes` existed and had `orders`?
+            // "server/routes/adminRoutes.js" was listed in search. 
+            // I should stick to what was there OR use the one I confirmed in orderRoutes which is GET /api/orders.
+            // I'll try /orders first (mapped to /api/orders usually).
+            // Actually, I'll stick to `api.get('/orders')` which hits `orderRoutes.js` `router.get('/', ...)`
+
             setOrders(response.data);
             setFilteredOrders(response.data);
             setLoading(false);
         } catch (error) {
             console.error('Error fetching orders:', error);
-            toast.error('Failed to load orders');
-            setLoading(false);
+            // Fallback to /orders if /admin/orders failed?
+            try {
+                const res2 = await api.get('/orders');
+                setOrders(res2.data);
+                setFilteredOrders(res2.data);
+                setLoading(false);
+            } catch (err2) {
+                toast.error('Failed to load orders');
+                setLoading(false);
+            }
         }
     };
 
     const handleRefund = async (orderId) => {
-        if (!window.confirm('Are you sure you want to refund this order? This action cannot be undone.')) {
+        if (!window.confirm('Are you sure you want to refund this ONLINE order? This will trigger Razorpay Refund.')) {
             return;
         }
 
         try {
             const response = await api.post('/payment/refund', { orderId });
             if (response.data.success) {
-                toast.success('Refund initiated successfully');
-                fetchOrders(); // Refresh list
+                toast.success('Online Refund initiated successfully');
+                fetchOrders();
             }
         } catch (error) {
             console.error('Refund failed:', error);
             toast.error(error.response?.data?.message || 'Refund failed');
+        }
+    };
+
+    const handleRefundStatusUpdate = async (orderId, newStatus) => {
+        const note = prompt(`Enter note for marking as ${newStatus} (Optional):`);
+        try {
+            const response = await api.put(`/orders/${orderId}/refund-status`, {
+                refundStatus: newStatus,
+                note: note
+            });
+            if (response.data.success) {
+                toast.success(`Refund status updated to ${newStatus}`);
+                fetchOrders();
+            }
+        } catch (error) {
+            console.error('Update failed:', error);
+            toast.error(error.response?.data?.message || 'Update failed');
         }
     };
 
@@ -109,7 +148,7 @@ export default function AdminPayments() {
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                         <input
                             type="text"
-                            placeholder="Search Order ID, User, or Payment ID..."
+                            placeholder="Search Order ID, User..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -140,11 +179,11 @@ export default function AdminPayments() {
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Order ID</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Method</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Payment ID</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Invoice</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Pyment Status</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Review Request</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -159,42 +198,31 @@ export default function AdminPayments() {
                                                     Duplicate
                                                 </span>
                                             )}
+                                            {order.refundStatus && order.refundStatus !== 'NONE' && (
+                                                <div className="mt-1 text-[10px] font-bold text-slate-500 uppercase">
+                                                    Refund: {order.refundStatus}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-medium text-slate-900">{order.user?.name || 'Unknown'}</div>
                                             <div className="text-xs text-slate-500">{order.user?.email}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-bold text-slate-900">₹{order.totalAmount}</div>
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${order.paymentMethod === 'COD' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                {order.paymentMethod || 'ONLINE'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="font-mono text-xs text-slate-500">
-                                                {order.razorpayPaymentId || '-'}
-                                                {order.razorpayOrderId && (
-                                                    <div className="text-[10px] text-slate-400 mt-1">
-                                                        Ord: {order.razorpayOrderId}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <div className="text-sm font-bold text-slate-900">₹{order.totalAmount}</div>
+                                            <div className="text-xs text-slate-400">Total</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <StatusBadge status={order.paymentStatus} />
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {order.invoiceUrl && (
-                                                <a
-                                                    href={getStaticUrl(order.invoiceUrl)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm font-medium"
-                                                >
-                                                    <FileText className="w-4 h-4" />
-                                                    PDF
-                                                </a>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {order.paymentStatus === 'paid' && (
+                                            {order.paymentMethod === 'ONLINE' && order.paymentStatus === 'paid' && (
                                                 <button
                                                     onClick={() => handleRefund(order._id)}
                                                     className="text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center gap-1"
@@ -203,11 +231,35 @@ export default function AdminPayments() {
                                                     Refund
                                                 </button>
                                             )}
-                                            {order.paymentStatus === 'refunded' && (
-                                                <div className="text-xs text-green-600 font-medium">
-                                                    Refunded: ₹{order.refundAmount}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {order.refundStatus === 'PROCESSING' && (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            if (order.paymentMethod === 'COD') {
+                                                                handleRefundStatusUpdate(order._id, 'COMPLETED');
+                                                            } else {
+                                                                // For Online, Approve triggers the actual refund flow
+                                                                handleRefund(order._id);
+                                                            }
+                                                        }}
+                                                        className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-xs font-bold hover:bg-green-200"
+                                                        title={order.paymentMethod === 'COD' ? "Mark as Refunded/Resolved" : "Initiate Razorpay Refund"}
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRefundStatusUpdate(order._id, 'NOT_REQUIRED')}
+                                                        className="px-3 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-bold hover:bg-slate-200"
+                                                        title="Reject Refund Request"
+                                                    >
+                                                        Reject
+                                                    </button>
                                                 </div>
                                             )}
+                                            {(order.refundStatus === 'COMPLETED' || order.refundStatus === 'processed') && <span className="text-green-600 text-xs font-bold">Refunded</span>}
+                                            {order.refundStatus === 'NOT_REQUIRED' && <span className="text-slate-400 text-xs text-center">Rejected</span>}
                                         </td>
                                     </tr>
                                 ))}

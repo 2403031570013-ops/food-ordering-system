@@ -391,4 +391,39 @@ router.get('/analytics/top-restaurants', protect, admin, async (req, res) => {
     }
 });
 
+// --- MENU ONBOARDING ---
+
+// @route   GET /api/admin/menu-setup/pending
+// @desc    Get restaurants with pending menu setup
+// @access  Private/Admin
+router.get('/menu-setup/pending', protect, admin, async (req, res) => {
+    try {
+        const pendingMenus = await Hotel.find({ menuStatus: 'PENDING_SETUP' })
+            .select('name image email phone menuLink menuText menuStatus adminNotes')
+            .sort({ updatedAt: -1 });
+        res.json(pendingMenus);
+    } catch (error) {
+        console.error('Pending Menus Error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   PUT /api/admin/menu-setup/:id/status
+// @desc    Update menu status (e.g. to ACTIVE)
+// @access  Private/Admin
+router.put('/menu-setup/:id/status', protect, admin, async (req, res) => {
+    try {
+        const { status, adminNotes } = req.body;
+        const hotel = await Hotel.findByIdAndUpdate(
+            req.params.id,
+            { menuStatus: status, adminNotes },
+            { new: true }
+        );
+        res.json(hotel);
+    } catch (error) {
+        console.error('Update Menu Status Error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 module.exports = router;

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, LogOut, Menu, X, ChevronDown, User, Store, ShieldCheck } from 'lucide-react';
+import { ShoppingCart, LogOut, Menu, X, ChevronDown, User, Store, ShieldCheck, Tag } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore, useCartStore } from '../store';
 import { useState, useEffect } from 'react';
@@ -44,7 +44,7 @@ export default function Navbar() {
                 <span className="text-2xl">🍔</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-orange-600 transition-colors">FoodHub</span>
+                <span className="text-xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-orange-600 transition-colors">FoodHub Now</span>
                 <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Premium Delivery</span>
               </div>
             </Link>
@@ -52,6 +52,7 @@ export default function Navbar() {
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center gap-8">
               <NavLink to="/" current={location.pathname}>Home</NavLink>
+              <NavLink to="/coupons" current={location.pathname} icon={<Tag className="w-4 h-4" />}>Offers</NavLink>
               <NavLink to="/pricing" current={location.pathname} icon="👑">Premium</NavLink>
               {!user && <NavLink to="/partner-with-us" current={location.pathname}>Partner</NavLink>}
             </div>
@@ -103,6 +104,7 @@ export default function Navbar() {
 
                         <DropdownItem to="/profile" icon={User} onClick={() => setProfileOpen(false)}>My Profile</DropdownItem>
                         <DropdownItem to="/orders" icon={ShoppingCart} onClick={() => setProfileOpen(false)}>My Orders</DropdownItem>
+                        <DropdownItem to="/coupons" icon={Tag} onClick={() => setProfileOpen(false)}>My Coupons</DropdownItem>
 
                         {user.role === 'admin' && (
                           <DropdownItem to="/admin" icon={ShieldCheck} onClick={() => setProfileOpen(false)} className="text-blue-600 bg-blue-50/50">Admin Panel</DropdownItem>
@@ -154,6 +156,7 @@ export default function Navbar() {
           >
             <div className="p-4 space-y-2">
               <MobileLink to="/" onClick={() => setIsOpen(false)}>Home</MobileLink>
+              <MobileLink to="/coupons" onClick={() => setIsOpen(false)}>Offers & Coupons</MobileLink>
               <MobileLink to="/pricing" onClick={() => setIsOpen(false)}>Premium Plans</MobileLink>
               {!user && <MobileLink to="/partner-with-us" onClick={() => setIsOpen(false)}>Partner with Us</MobileLink>}
 

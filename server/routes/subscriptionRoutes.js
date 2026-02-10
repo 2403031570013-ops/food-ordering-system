@@ -12,38 +12,24 @@ const razorpay = new Razorpay({
 });
 
 // Plan configurations
+// Plan configurations
 const PLANS = {
     free: {
         name: 'FoodHub Free',
         price: 0,
         features: {
-            maxOrdersPerMonth: 2,
-            freeDeliveryThreshold: null,
-            cashbackPercentage: 0,
-            prioritySupport: false,
-            exclusiveRestaurants: false,
+            COD: false,
+            refundPriority: false,
+            extendedCancel: false,
         },
     },
     lite: {
         name: 'FoodHub Lite',
         price: 99,
         features: {
-            maxOrdersPerMonth: Infinity,
-            freeDeliveryThreshold: 200,
-            cashbackPercentage: 5,
-            prioritySupport: false,
-            exclusiveRestaurants: false,
-        },
-    },
-    pro: {
-        name: 'FoodHub Pro',
-        price: 299,
-        features: {
-            maxOrdersPerMonth: Infinity,
-            freeDeliveryThreshold: 0, // Free on all orders
-            cashbackPercentage: 15,
-            prioritySupport: true,
-            exclusiveRestaurants: true,
+            COD: true,
+            refundPriority: true,
+            extendedCancel: true,
         },
     },
 };

@@ -15,6 +15,16 @@ export default function Pricing() {
     const [currentSubscription, setCurrentSubscription] = useState(null);
     const [selectedPlan, setSelectedPlan] = useState(null);
 
+    const loadRazorpayScript = () => {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
     useEffect(() => {
         if (user && token) {
             fetchCurrentSubscription();
@@ -42,6 +52,12 @@ export default function Pricing() {
 
         if (plan === 'free') return;
 
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+            alert('Razorpay SDK failed to load. Check your internet connection.');
+            return;
+        }
+
         setLoading(true);
         setSelectedPlan(plan);
 
@@ -66,7 +82,7 @@ export default function Pricing() {
                 key: key, // Use key from backend
                 amount: amount,
                 currency: currency,
-                name: 'FoodHub',
+                name: 'FoodHub Now',
                 description: description,
                 order_id: orderId,
                 prefill: {
@@ -134,58 +150,37 @@ export default function Pricing() {
     const plans = [
         {
             id: 'free',
-            name: 'FoodHub Free',
+            name: 'FoodHub Now Free',
             price: 0,
             period: 'Forever',
             icon: Star,
             color: 'slate',
             popular: false,
             features: [
-                { text: 'Basic food ordering', included: true },
-                { text: '2 orders per month', included: true },
-                { text: 'Standard delivery', included: true },
-                { text: 'Email support', included: true },
-                { text: 'Free delivery', included: false },
-                { text: 'Cashback rewards', included: false },
-                { text: 'Priority support', included: false },
+                { text: 'Browse & Order Food', included: true },
+                { text: 'Online Payment Only', included: true },
+                { text: 'Basic Order Tracking', included: true },
+                { text: 'Cash on Delivery (COD)', included: false },
+                { text: 'Priority Refund Processing', included: false },
+                { text: 'Extended Cancellation Window', included: false },
             ],
         },
         {
             id: 'lite',
-            name: 'FoodHub Lite',
+            name: 'FoodHub Now Lite',
             price: 99,
             period: 'month',
             icon: Zap,
-            color: 'blue',
-            popular: true,
-            badge: 'Most Popular',
-            features: [
-                { text: 'Unlimited orders', included: true },
-                { text: 'Free delivery on orders > ₹200', included: true },
-                { text: '5% cashback on all orders', included: true },
-                { text: 'Priority email support', included: true },
-                { text: 'Monthly exclusive offers', included: true },
-                { text: 'Early access to new restaurants', included: true },
-                { text: '24/7 phone support', included: false },
-            ],
-        },
-        {
-            id: 'pro',
-            name: 'FoodHub Pro',
-            price: 299,
-            period: 'month',
-            icon: Crown,
             color: 'orange',
-            popular: false,
-            badge: 'Best Value',
+            popular: true,
+            badge: 'RECOMMENDED',
             features: [
-                { text: 'Everything in Lite', included: true },
-                { text: 'FREE delivery on ALL orders', included: true },
-                { text: '15% cashback on all orders', included: true },
-                { text: 'Priority 24/7 phone support', included: true },
-                { text: 'Exclusive restaurant access', included: true },
-                { text: 'Birthday & anniversary treats', included: true },
-                { text: 'Dedicated account manager', included: true },
+                { text: 'Everything in Free', included: true },
+                { text: 'Cash on Delivery (COD)', included: true },
+                { text: 'Priority Refund Processing', included: true },
+                { text: 'Extended Cancellation Window', included: true },
+                { text: 'Priority Customer Support', included: true },
+                { text: 'Instant Refund Credits', included: true },
             ],
         },
     ];
@@ -235,7 +230,7 @@ export default function Pricing() {
                 )}
 
                 {/* Pricing Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16 max-w-4xl mx-auto">
                     {plans.map((plan, index) => {
                         const Icon = plan.icon;
                         const isCurrentPlan = currentSubscription?.plan === plan.id;

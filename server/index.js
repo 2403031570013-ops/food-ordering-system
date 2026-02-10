@@ -18,10 +18,10 @@ const hpp = require('hpp');
 // Security Headers
 app.use(helmet());
 
-// Rate Limiting (Global: 100 requests per 10 mins)
+// Rate Limiting (Global increased for development: 1000 requests per 10 mins)
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 100,
+  max: 1000,
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api', limiter);
@@ -85,6 +85,9 @@ app.use("/api/onboarding", require("./routes/onboardingRoutes")); // Restaurant 
 console.log("Mounting Subscription Routes...");
 app.use("/api/subscriptions", require("./routes/subscriptionRoutes")); // Premium Subscriptions
 app.use("/api/restaurant", require("./routes/restaurantRoutes")); // Restaurant Order Management
+app.use("/api/restaurant/reports", require("./routes/restaurantReportRoutes")); // Restaurant Reporting
+app.use("/api/coupons", require("./routes/couponRoutes")); // Coupon Management
+app.use("/api/admin/analytics", require("./routes/adminAnalyticsRoutes")); // Admin Analytics & BI
 
 // Error Handling Middleware
 // Error Handling Middleware
@@ -109,5 +112,9 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Food Ordering API Server running on http://localhost:${PORT}`);
+  console.log(`FoodHub Now API Server running on http://localhost:${PORT}`);
+
+  // Start Monthly Report Cron
+  const { startMonthlyCron } = require('./jobs/monthlyReport');
+  startMonthlyCron();
 });

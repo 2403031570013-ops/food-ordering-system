@@ -58,8 +58,8 @@ export default function SelectRole() {
         },
         {
             id: "admin",
-            title: "FoodHub Admin",
-            description: "I am part of the FoodHub team.",
+            title: "FoodHub Now Admin",
+            description: "I am part of the FoodHub Now team.",
             icon: ShieldCheck,
             color: "purple",
         },

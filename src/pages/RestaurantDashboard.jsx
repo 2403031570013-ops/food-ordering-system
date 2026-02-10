@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, ChefHat, Clock, CheckCircle, Bell, Menu as MenuIcon, Plus, Trash2, Edit2, TrendingUp, DollarSign, ShoppingBag, Settings, LogOut, LayoutDashboard } from 'lucide-react';
+import { Check, X, ChefHat, Clock, CheckCircle, Bell, Menu as MenuIcon, Plus, Trash2, Edit2, TrendingUp, DollarSign, ShoppingBag, Settings, LogOut, LayoutDashboard, ArrowDownCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../store';
 
@@ -100,7 +100,7 @@ export default function RestaurantDashboard() {
                 <div className="flex gap-4 mb-8 overflow-x-auto pb-4 scrollbar-hide">
                     <TabButton id="orders" label="Orders" icon={Bell} activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton id="menu" label="Menu" icon={MenuIcon} activeTab={activeTab} setActiveTab={setActiveTab} />
-                    <TabButton id="analytics" label="Analytics" icon={TrendingUp} activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <TabButton id="analytics" label="Reports" icon={TrendingUp} activeTab={activeTab} setActiveTab={setActiveTab} />
                 </div>
 
                 {/* CONTENT */}
@@ -112,7 +112,7 @@ export default function RestaurantDashboard() {
                     )}
                     {activeTab === 'menu' && (
                         <motion.div key="menu" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                            <MenuView hotelId={hotel._id} />
+                            <MenuView hotel={hotel} />
                         </motion.div>
                     )}
                     {activeTab === 'analytics' && (
@@ -211,10 +211,10 @@ function OrdersView({ hotelId }) {
     };
 
     // Categorize orders
-    const pendingOrders = orders.filter(o => o.status === 'pending');
-    const acceptedOrders = orders.filter(o => o.status === 'accepted');
-    const activeOrders = orders.filter(o => ['preparing', 'ready', 'out-for-delivery'].includes(o.status));
-    const completedOrders = orders.filter(o => ['delivered', 'rejected', 'cancelled'].includes(o.status));
+    const pendingOrders = orders.filter(o => ['pending', 'PLACED'].includes(o.status));
+    const acceptedOrders = orders.filter(o => ['accepted', 'ACCEPTED'].includes(o.status));
+    const activeOrders = orders.filter(o => ['preparing', 'PREPARING', 'ready', 'READY', 'out-for-delivery', 'OUT_FOR_DELIVERY'].includes(o.status));
+    const completedOrders = orders.filter(o => ['delivered', 'DELIVERED', 'rejected', 'REJECTED', 'cancelled', 'CANCELLED'].includes(o.status));
 
     if (loading) return <div className="text-center py-20 text-slate-500 flex flex-col items-center"><div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>Fetching Delivery Items...</div>;
 
@@ -318,9 +318,10 @@ function OrdersView({ hotelId }) {
                                     <span className="text-xs text-slate-400">{new Date(order.createdAt).toLocaleString()}</span>
                                 </div>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                                order.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                    'bg-slate-100 text-slate-600'
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${['delivered', 'DELIVERED'].includes(order.status) ? 'bg-green-100 text-green-700' :
+                                ['rejected', 'REJECTED'].includes(order.status) ? 'bg-red-100 text-red-700' :
+                                    ['cancelled', 'CANCELLED'].includes(order.status) ? 'bg-slate-200 text-slate-700 border border-slate-300' :
+                                        'bg-slate-100 text-slate-600'
                                 }`}>
                                 {order.status}
                             </span>
@@ -465,14 +466,31 @@ function EmptyState({ type }) {
     )
 }
 
-function MenuView({ hotelId }) {
+function MenuView({ hotel }) {
     const [foods, setFoods] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingFood, setEditingFood] = useState(null);
+    const [menuLink, setMenuLink] = useState(hotel.menuLink || '');
+    const [menuText, setMenuText] = useState(hotel.menuText || '');
+    const [submitLoading, setSubmitLoading] = useState(false);
+
+    const onOnboardingSubmit = async (e) => {
+        e.preventDefault();
+        setSubmitLoading(true);
+        try {
+            await api.post('/restaurant/menu-setup', { menuLink, menuText });
+            toast.success("Menu submitted for setup!");
+            window.location.reload();
+        } catch (err) {
+            toast.error("Failed to submit");
+        } finally {
+            setSubmitLoading(false);
+        }
+    };
 
     const fetchFoods = async () => {
         try {
-            const res = await api.get(`/foods?hotelId=${hotelId}`);
+            const res = await api.get(`/foods?hotelId=${hotel._id}`);
             setFoods(res.data);
         } catch (err) {
             console.error("Failed to fetch menu", err);
@@ -480,8 +498,11 @@ function MenuView({ hotelId }) {
     };
 
     useEffect(() => {
-        fetchFoods();
-    }, [hotelId]);
+        if (hotel.menuStatus === 'ACTIVE') {
+            fetchFoods();
+        }
+    }, [hotel._id, hotel.menuStatus]);
+
 
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this item?")) return;
@@ -494,6 +515,79 @@ function MenuView({ hotelId }) {
         }
     };
 
+    // ONBOARDING VIEW
+    if (hotel.menuStatus && hotel.menuStatus !== 'ACTIVE') {
+        const statusColors = {
+            'PENDING_SETUP': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            'IN_PROGRESS': 'bg-blue-100 text-blue-800 border-blue-200',
+            'REJECTED': 'bg-red-100 text-red-800 border-red-200'
+        };
+
+        return (
+            <div className="max-w-2xl mx-auto py-10">
+                <div className="text-center mb-10">
+                    <div className="w-20 h-20 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                        <MenuIcon className="w-10 h-10" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-slate-800">Menu Setup Assistant</h2>
+                    <p className="text-slate-500 mt-2 text-lg">Let our team handle the tedious data entry for you.</p>
+                </div>
+
+                <div className={`p-4 rounded-xl border mb-8 text-center font-bold uppercase tracking-widest ${statusColors[hotel.menuStatus] || 'bg-slate-100'}`}>
+                    Status: {hotel.menuStatus?.replace('_', ' ')}
+                </div>
+
+                <div className="glass-card p-8 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-500 to-red-600" />
+                    <form onSubmit={onOnboardingSubmit} className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">Menu File Link</label>
+                            <input
+                                className="input-field"
+                                placeholder="Paste link to Google Drive, Dropbox, Website, or PDF URL..."
+                                value={menuLink}
+                                onChange={e => setMenuLink(e.target.value)}
+                            />
+                            <p className="text-xs text-slate-400 mt-1">Accepts PDF, Excel, Images, or Website URLs.</p>
+                        </div>
+
+                        <div className="relative py-2">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-slate-200" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white px-2 text-slate-400 font-bold">OR TYPE MANUALLY</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">Menu Details</label>
+                            <textarea
+                                className="input-field h-40"
+                                placeholder="List your items here (Name - Price - Description)..."
+                                value={menuText}
+                                onChange={e => setMenuText(e.target.value)}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={submitLoading}
+                            className="w-full btn-primary py-4 text-lg shadow-lg shadow-orange-200 group"
+                        >
+                            {submitLoading ? 'Submitting...' : 'Submit to Admin Team'}
+                            {!submitLoading && <Check className="w-5 h-5 inline-block ml-2 group-hover:translate-x-1 transition-transform" />}
+                        </button>
+                    </form>
+                </div>
+
+                <p className="text-center text-slate-400 text-sm mt-8">
+                    Need help? Contact support@foodhubnow.com
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div>
             <div className="flex justify-between items-center mb-8">
@@ -502,12 +596,14 @@ function MenuView({ hotelId }) {
                     <p className="text-slate-500">Manage your {foods.length} items</p>
                 </div>
 
-                <button
-                    onClick={() => { setEditingFood(null); setIsModalOpen(true); }}
-                    className="btn-primary flex items-center gap-2 px-6"
-                >
-                    <Plus className="w-5 h-5" /> Add New Item
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => { setEditingFood(null); setIsModalOpen(true); }}
+                        className="btn-primary flex items-center gap-2 px-6"
+                    >
+                        <Plus className="w-5 h-5" /> Add New Item
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -623,51 +719,181 @@ function FoodModal({ food, onClose, onSave }) {
 }
 
 function AnalyticsView({ hotelId }) {
-    const [stats, setStats] = useState({ revenue: 0, orders: 0, avgValue: 0 });
+    const [range, setRange] = useState('today');
+    const [customStart, setCustomStart] = useState('');
+    const [customEnd, setCustomEnd] = useState('');
+    const [summary, setSummary] = useState({ totalOrders: 0, totalRevenue: 0, avgOrderValue: 0 });
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.get('/restaurant/orders').then(res => {
-            const orders = (res.data.orders || []).filter(o => o.status === 'delivered');
-            const revenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-            setStats({
-                revenue,
-                orders: orders.length,
-                avgValue: orders.length ? Math.round(revenue / orders.length) : 0
-            });
-        }).catch(err => console.error(err));
-    }, []);
+        if (range !== 'custom') fetchData();
+        // eslint-disable-next-line
+    }, [range]);
+
+    const buildQuery = () => {
+        if (range === 'custom' && customStart && customEnd) {
+            return `range=custom&startDate=${customStart}&endDate=${customEnd}`;
+        }
+        return `range=${range}`;
+    };
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const q = buildQuery();
+            const [summaryRes, ordersRes] = await Promise.all([
+                api.get(`/restaurant/reports/summary?${q}`),
+                api.get(`/restaurant/reports/orders?${q}`)
+            ]);
+            setSummary(summaryRes.data);
+            setOrders(ordersRes.data);
+        } catch (err) {
+            console.error("Report fetch error", err);
+            toast.error("Failed to load report data");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const applyCustom = () => {
+        if (!customStart || !customEnd) return toast.error("Select both dates");
+        if (new Date(customStart) > new Date(customEnd)) return toast.error("Start date must be before end date");
+        setRange('custom');
+        setTimeout(() => fetchData(), 0);
+    };
+
+    const downloadFile = async (type) => {
+        try {
+            const q = buildQuery();
+            const response = await api.get(`/restaurant/reports/${type}?${q}`, { responseType: 'blob' });
+            const ext = type === 'excel' ? 'xlsx' : type;
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `FoodHubNow_Report_${range}_${new Date().toISOString().split('T')[0]}.${ext}`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            toast.success(`${type.toUpperCase()} downloaded`);
+        } catch (err) {
+            console.error(err);
+            toast.error(`Failed to download ${type.toUpperCase()}`);
+        }
+    };
+
+    const ranges = [
+        { id: 'today', label: 'Today' },
+        { id: 'week', label: '7 Days' },
+        { id: 'month', label: '30 Days' },
+        { id: 'year', label: '1 Year' },
+    ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <motion.div whileHover={{ y: -5 }} className="glass-card p-8 flex items-center gap-6">
-                <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center shadow-inner">
-                    <DollarSign className="w-8 h-8" />
+        <div className="space-y-6">
+            {/* Controls Bar */}
+            <div className="glass-card p-5">
+                <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                    <div className="flex bg-slate-100 p-1 rounded-lg flex-shrink-0">
+                        {ranges.map(r => (
+                            <button key={r.id} onClick={() => setRange(r.id)}
+                                className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${range === r.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                    }`}>{r.label}</button>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
+                            className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent" />
+                        <span className="text-slate-400 text-sm">to</span>
+                        <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
+                            className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent" />
+                        <button onClick={applyCustom}
+                            className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors">Apply</button>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={() => downloadFile('pdf')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors flex items-center gap-1.5">
+                            <ArrowDownCircle className="w-4 h-4" /> PDF</button>
+                        <button onClick={() => downloadFile('csv')} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition-colors flex items-center gap-1.5">
+                            <ArrowDownCircle className="w-4 h-4" /> CSV</button>
+                        <button onClick={() => downloadFile('excel')} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors flex items-center gap-1.5">
+                            <ArrowDownCircle className="w-4 h-4" /> Excel</button>
+                    </div>
                 </div>
-                <div>
-                    <p className="text-slate-500 font-bold text-sm uppercase tracking-wide">Total Revenue</p>
-                    <p className="text-4xl font-extrabold text-slate-900 mt-1">₹{stats.revenue}</p>
-                </div>
-            </motion.div>
+            </div>
 
-            <motion.div whileHover={{ y: -5 }} className="glass-card p-8 flex items-center gap-6">
-                <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-inner">
-                    <ShoppingBag className="w-8 h-8" />
+            {loading ? (
+                <div className="text-center py-20">
+                    <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-400 font-medium">Generating Report...</p>
                 </div>
-                <div>
-                    <p className="text-slate-500 font-bold text-sm uppercase tracking-wide">Delivered Orders</p>
-                    <p className="text-4xl font-extrabold text-slate-900 mt-1">{stats.orders}</p>
-                </div>
-            </motion.div>
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 flex items-center gap-4 border-l-4 border-green-500">
+                            <div className="p-3 bg-green-100 text-green-600 rounded-full"><DollarSign className="w-6 h-6" /></div>
+                            <div>
+                                <p className="text-sm font-bold text-slate-400 uppercase">Total Revenue</p>
+                                <p className="text-3xl font-extrabold text-slate-900">₹{(summary.totalRevenue || 0).toLocaleString()}</p>
+                            </div>
+                        </motion.div>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6 flex items-center gap-4 border-l-4 border-blue-500">
+                            <div className="p-3 bg-blue-100 text-blue-600 rounded-full"><ShoppingBag className="w-6 h-6" /></div>
+                            <div>
+                                <p className="text-sm font-bold text-slate-400 uppercase">Total Orders</p>
+                                <p className="text-3xl font-extrabold text-slate-900">{summary.totalOrders}</p>
+                            </div>
+                        </motion.div>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6 flex items-center gap-4 border-l-4 border-purple-500">
+                            <div className="p-3 bg-purple-100 text-purple-600 rounded-full"><TrendingUp className="w-6 h-6" /></div>
+                            <div>
+                                <p className="text-sm font-bold text-slate-400 uppercase">Avg. Order Value</p>
+                                <p className="text-3xl font-extrabold text-slate-900">₹{(summary.avgOrderValue || 0).toLocaleString()}</p>
+                            </div>
+                        </motion.div>
+                    </div>
 
-            <motion.div whileHover={{ y: -5 }} className="glass-card p-8 flex items-center gap-6">
-                <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shadow-inner">
-                    <TrendingUp className="w-8 h-8" />
-                </div>
-                <div>
-                    <p className="text-slate-500 font-bold text-sm uppercase tracking-wide">Avg. Order Value</p>
-                    <p className="text-4xl font-extrabold text-slate-900 mt-1">₹{stats.avgValue}</p>
-                </div>
-            </motion.div>
+                    <div className="glass-card overflow-hidden">
+                        <div className="p-6 border-b border-slate-100">
+                            <h3 className="font-bold text-lg text-slate-800">Order History ({orders.length})</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-wider text-left">
+                                    <tr>
+                                        <th className="p-4">Order ID</th>
+                                        <th className="p-4">Date</th>
+                                        <th className="p-4">Customer</th>
+                                        <th className="p-4">Amount</th>
+                                        <th className="p-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {orders.map((order) => (
+                                        <tr key={order._id} className="hover:bg-slate-50 transition-colors text-sm">
+                                            <td className="p-4 font-mono text-slate-500">#{order._id.slice(-6)}</td>
+                                            <td className="p-4 text-slate-600">
+                                                {new Date(order.createdAt).toLocaleDateString()}
+                                                <span className="block text-xs text-slate-400">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </td>
+                                            <td className="p-4 font-bold text-slate-700">{order.user?.name || 'Guest'}</td>
+                                            <td className="p-4 font-extrabold text-slate-900">₹{order.totalAmount}</td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${['delivered', 'DELIVERED'].includes(order.status) ? 'bg-green-100 text-green-600' :
+                                                    ['cancelled', 'CANCELLED'].includes(order.status) ? 'bg-red-100 text-red-600' :
+                                                        'bg-blue-100 text-blue-600'
+                                                    }`}>{order.status}</span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {orders.length === 0 && (
+                                        <tr><td colSpan="5" className="p-8 text-center text-slate-400 italic">No orders found for this period.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     )
 }

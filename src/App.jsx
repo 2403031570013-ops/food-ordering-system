@@ -12,6 +12,8 @@ import UserOrders from "./pages/UserOrders"; // User Orders Page
 import OrderSuccess from "./pages/OrderSuccess"; // Order Success Page
 import Checkout from "./pages/Checkout"; // Checkout Page
 import RestaurantMenu from "./pages/RestaurantMenu"; // Restaurant Menu Page
+import Coupons from "./pages/Coupons"; // Coupons Page
+import NewbieOfferModal from "./components/NewbieOfferModal";
 
 import AdminDashboard from "./pages/AdminDashboard"; // Admin Dashboard
 import AdminRestaurants from "./pages/AdminRestaurants"; // Admin Restaurant Management
@@ -27,6 +29,7 @@ function App() {
   return (
     <>
       <Watermark />
+      <NewbieOfferModal />
       <Navbar />
       <div className="relative z-10">
         <Routes>
@@ -36,6 +39,7 @@ function App() {
           <Route path="/orders" element={<UserOrders />} /> {/* My Orders Page */}
           <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/checkout" element={<Checkout />} /> {/* Checkout with Payment */}
+          <Route path="/coupons" element={<Coupons />} /> {/* Coupons Page */}
           <Route path="/login" element={<Login />} />
           <Route path="/select-role" element={<SelectRole />} />
           <Route path="/signup" element={<Signup />} />

@@ -42,33 +42,54 @@ const demoRestaurants = [
         status: "active",
         bgImage: "https://images.unsplash.com/photo-1541544744-37570a849b07?w=1600&q=80",
         description: "Authentic Chinese flavors in every bowl."
+    },
+    {
+        name: "Spice Villa",
+        image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80",
+        cuisine: ["North Indian", "Tandoor"],
+        rating: 4.7,
+        deliveryTime: 45,
+        address: { street: "101 Luxury Lane", city: "Delhi", state: "DL", pincode: "110001" },
+        location: { type: 'Point', coordinates: [77.2090, 28.6139] },
+        approved: true,
+        status: "active",
+        bgImage: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1600&q=80",
+        description: "Premium North Indian dining experience."
     }
 ];
 
 const demoMenus = {
     "Midnight Munchies": [
-        { name: "Double Cheese Margherita", price: 399, description: "Classic cheese pizza with extra mozzarella", image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&q=80", category: "Pizza", isVeg: true },
-        { name: "BBQ Chicken Pizza", price: 499, description: "Smokey BBQ chicken with onions", image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80", category: "Pizza", isVeg: false },
-        { name: "Midnight Beast Burger", price: 299, description: "Double patty lamb burger", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80", category: "Burgers", isVeg: false },
-        { name: "Crispy Veggie Burger", price: 199, description: "Potato and pea patty with spicy mayo", image: "https://images.unsplash.com/photo-1550547660-d9450f859451?w=800&q=80", category: "Burgers", isVeg: true },
-        { name: "Cheesy Fries", price: 149, description: "Crispy fries topped with melted cheddar", image: "https://images.unsplash.com/photo-1573080496987-a199f8cd4054?w=800&q=80", category: "Sides", isVeg: true },
-        { name: "Oreo Shake", price: 179, description: "Thick creamy shake with oreo crumbles", image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=800&q=80", category: "Drinks", isVeg: true }
+        { name: "Double Cheese Margherita", price: 249, description: "Classic cheese pizza with extra mozzarella", image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&q=80", category: "Pizza", isVeg: true },
+        { name: "BBQ Chicken Pizza", price: 349, description: "Smokey BBQ chicken with onions", image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80", category: "Pizza", isVeg: false },
+        { name: "Midnight Beast Burger", price: 199, description: "Double patty lamb burger", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80", category: "Burgers", isVeg: false },
+        { name: "Crispy Veggie Burger", price: 129, description: "Potato and pea patty with spicy mayo", image: "https://images.unsplash.com/photo-1550547660-d9450f859451?w=800&q=80", category: "Burgers", isVeg: true },
+        { name: "Cheesy Fries", price: 99, description: "Crispy fries topped with melted cheddar", image: "https://images.unsplash.com/photo-1573080496987-a199f8cd4054?w=800&q=80", category: "Sides", isVeg: true },
+        { name: "Oreo Shake", price: 129, description: "Thick creamy shake with oreo crumbles", image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=800&q=80", category: "Drinks", isVeg: true }
     ],
     "Bombay Biryani House": [
-        { name: "Chicken Dum Biryani", price: 350, description: "Authentic hyderabadi style dum biryani", image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&q=80", category: "Biryani", isVeg: false },
-        { name: "Paneer Tikka Biryani", price: 320, description: "Marinated paneer layered with aromatic rice", image: "https://images.unsplash.com/photo-1642821373181-6962d7781129?w=800&q=80", category: "Biryani", isVeg: true },
-        { name: "Butter Chicken", price: 420, description: "Creamy tomato curry with tender chicken", image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&q=80", category: "Curry", isVeg: false },
-        { name: "Garlic Naan", price: 60, description: "Soft bread topped with garlic butter", image: "https://images.unsplash.com/photo-1626082927389-9b2f3a67733f?w=800&q=80", category: "Breads", isVeg: true },
-        { name: "Gulab Jamun", price: 120, description: "Soft dough balls dipped in sugar syrup", image: "https://images.unsplash.com/photo-1541745537411-b8096dc29c4e?w=800&q=80", category: "Dessert", isVeg: true },
-        { name: "Lassi", price: 100, description: "Sweet yogurt drink topped with malai", image: "https://images.unsplash.com/photo-1626082927389-9b2f3a67733f?w=800&q=80", category: "Drinks", isVeg: true }
+        { name: "Chicken Dum Biryani", price: 249, description: "Authentic hyderabadi style dum biryani", image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&q=80", category: "Biryani", isVeg: false },
+        { name: "Paneer Tikka Biryani", price: 219, description: "Marinated paneer layered with aromatic rice", image: "https://images.unsplash.com/photo-1642821373181-6962d7781129?w=800&q=80", category: "Biryani", isVeg: true },
+        { name: "Butter Chicken", price: 299, description: "Creamy tomato curry with tender chicken", image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&q=80", category: "Curry", isVeg: false },
+        { name: "Garlic Naan", price: 40, description: "Soft bread topped with garlic butter", image: "https://images.unsplash.com/photo-1626082927389-9b2f3a67733f?w=800&q=80", category: "Breads", isVeg: true },
+        { name: "Gulab Jamun", price: 80, description: "Soft dough balls dipped in sugar syrup", image: "https://images.unsplash.com/photo-1541745537411-b8096dc29c4e?w=800&q=80", category: "Dessert", isVeg: true },
+        { name: "Lassi", price: 60, description: "Sweet yogurt drink topped with malai", image: "https://images.unsplash.com/photo-1626082927389-9b2f3a67733f?w=800&q=80", category: "Drinks", isVeg: true }
     ],
     "Dragon Bowl": [
-        { name: "Hakka Noodles", price: 210, description: "Stir fried noodles with fresh veggies", image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=800&q=80", category: "Noodles", isVeg: true },
-        { name: "Chicken Schezwan Rice", price: 250, description: "Spicy fried rice with chicken chunks", image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80", category: "Rice", isVeg: false },
-        { name: "Veg Steamed Momos", price: 140, description: "Delicate dumplings filled with veggies", image: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?w=800&q=80", category: "Momos", isVeg: true },
-        { name: "Chilli Chicken", price: 290, description: "Crispy chicken tossed in spicy soya sauce", image: "https://images.unsplash.com/photo-1525755662778-989d0524087e?w=800&q=80", category: "Starters", isVeg: false },
-        { name: "Manchow Soup", price: 160, description: "Spicy soup topped with fried noodles", image: "https://images.unsplash.com/photo-1547592166-23acbe3226bf?w=800&q=80", category: "Soup", isVeg: true },
-        { name: "Spring Rolls", price: 180, description: "Crispy rolls with vegetable filling", image: "https://images.unsplash.com/photo-1544025162-d76690b67f66?w=800&q=80", category: "Starters", isVeg: true }
+        { name: "Hakka Noodles", price: 149, description: "Stir fried noodles with fresh veggies", image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=800&q=80", category: "Noodles", isVeg: true },
+        { name: "Chicken Schezwan Rice", price: 189, description: "Spicy fried rice with chicken chunks", image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80", category: "Rice", isVeg: false },
+        { name: "Veg Steamed Momos", price: 99, description: "Delicate dumplings filled with veggies", image: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?w=800&q=80", category: "Momos", isVeg: true },
+        { name: "Chilli Chicken", price: 199, description: "Crispy chicken tossed in spicy soya sauce", image: "https://images.unsplash.com/photo-1525755662778-989d0524087e?w=800&q=80", category: "Starters", isVeg: false },
+        { name: "Manchow Soup", price: 110, description: "Spicy soup topped with fried noodles", image: "https://images.unsplash.com/photo-1547592166-23acbe3226bf?w=800&q=80", category: "Soup", isVeg: true },
+        { name: "Spring Rolls", price: 120, description: "Crispy rolls with vegetable filling", image: "https://images.unsplash.com/photo-1544025162-d76690b67f66?w=800&q=80", category: "Starters", isVeg: true }
+    ],
+    "Spice Villa": [
+        { name: "Dal Makhani", price: 180, description: "Rich and creamy black lentils slow-cooked overnight", image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&q=80", category: "Curry", isVeg: true },
+        { name: "Butter Naan", price: 45, description: "Soft indian bread with butter", image: "https://images.unsplash.com/photo-1626082927389-9b2f3a67733f?w=800&q=80", category: "Breads", isVeg: true },
+        { name: "Paneer Butter Masala", price: 240, description: "Cottage cheese in rich tomato gravy", image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&q=80", category: "Curry", isVeg: true },
+        { name: "Chicken Tikka", price: 280, description: "Tandoori grilled chicken chunks", image: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80", category: "Starters", isVeg: false },
+        { name: "Jeera Rice", price: 120, description: "Basmati rice tempered with cumin seeds", image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&q=80", category: "Rice", isVeg: true },
+        { name: "Tandoori Roti", price: 30, description: "Whole wheat bread baked in clay oven", image: "https://images.unsplash.com/photo-1626082927389-9b2f3a67733f?w=800&q=80", category: "Breads", isVeg: true }
     ]
 };
 
@@ -78,11 +99,10 @@ async function seedDemoData() {
         // Check for Demo Admin
         let demoUser = await User.findOne({ email: 'demo@foodhub.com' });
         if (!demoUser) {
-            const hashedPassword = await bcrypt.hash('demo123', 10);
             demoUser = await User.create({
                 name: "Demo Admin",
                 email: "demo@foodhub.com",
-                password: hashedPassword,
+                password: "Demo@123",  // pre-save hook will hash this
                 role: "admin"
             });
             console.log("Created demo admin user.");
@@ -92,30 +112,56 @@ async function seedDemoData() {
 
         // Seeding Logic
         for (const resData of demoRestaurants) {
-            const existing = await Hotel.findOne({ name: resData.name });
-            if (existing) {
-                console.log(`Restaurant ${resData.name} already exists.`);
-                continue;
-            }
+            let hotel = await Hotel.findOne({ name: resData.name });
 
-            const hotel = await Hotel.create({
-                ...resData,
-                user: demoUser._id,
-                email: `contact@${resData.name.replace(/\s+/g, '').toLowerCase()}.com`,
-                phone: "9876543210"
-            });
-            console.log(`Created restaurant: ${hotel.name}`);
+            if (hotel) {
+                console.log(`Updating existing restaurant: ${resData.name}`);
+                // Use raw collection update to avoid validation/overwrite issues
+                // Only update visual fields, NOT user/email ownership
+                const { name, ...updateFields } = resData;
+                await Hotel.collection.updateOne(
+                    { _id: hotel._id },
+                    {
+                        $set: {
+                            image: updateFields.image,
+                            cuisine: updateFields.cuisine,
+                            rating: updateFields.rating,
+                            deliveryTime: updateFields.deliveryTime,
+                            address: updateFields.address,
+                            location: updateFields.location,
+                            approved: true,
+                            status: 'active',
+                            bgImage: updateFields.bgImage,
+                            description: updateFields.description,
+                            menuStatus: 'ACTIVE'
+                        }
+                    }
+                );
+            } else {
+                console.log(`Creating new restaurant: ${resData.name}`);
+                hotel = await Hotel.create({
+                    ...resData,
+                    user: demoUser._id,
+                    email: `contact@${resData.name.replace(/\s+/g, '').toLowerCase()}.com`,
+                    phone: "9876543210"
+                });
+            }
 
             const menu = demoMenus[hotel.name];
             if (menu) {
-                const foodItems = menu.map(item => ({
-                    ...item,
-                    hotelId: hotel._id,
-                    hotel: hotel._id,
-                    vegetarian: item.isVeg // Map isVeg to vegetarian
-                }));
-                await Food.insertMany(foodItems);
-                console.log(`  Added ${foodItems.length} menu items.`);
+                // Upsert menu items (Update if exists, Insert if not)
+                for (const item of menu) {
+                    await Food.findOneAndUpdate(
+                        { hotelId: hotel._id, name: item.name },
+                        {
+                            ...item,
+                            hotelId: hotel._id,
+                            vegetarian: item.isVeg
+                        },
+                        { upsert: true }
+                    );
+                }
+                console.log(`  Synced ${menu.length} menu items for ${hotel.name}`);
             }
         }
         console.log("✅ Demo data seeded successfully.");

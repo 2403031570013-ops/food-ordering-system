@@ -111,6 +111,20 @@ const hotelSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    menuStatus: {
+      type: String,
+      enum: ['PENDING_SETUP', 'IN_PROGRESS', 'ACTIVE', 'REJECTED'],
+      default: 'PENDING_SETUP',
+    },
+    menuLink: {
+      type: String, // URL to menu file (PDF, Image, Excel)
+    },
+    menuText: {
+      type: String, // Text description of menu items
+    },
+    adminNotes: {
+      type: String, // Internal notes for admin
+    },
   },
   { timestamps: true }
 );

@@ -82,7 +82,7 @@ export default function Signup() {
           className="max-w-4xl w-full"
         >
           <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">Join FoodHub</h1>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">Join FoodHub Now</h1>
             <p className="text-slate-600">How would you like to use our platform?</p>
           </div>
 

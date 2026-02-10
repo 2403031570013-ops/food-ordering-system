@@ -12,9 +12,10 @@ const razorpay = new Razorpay({
 
 // 1. Initiate Payment (Create DB Order + Razorpay Order)
 // 1. Initiate Payment (Create DB Order + Razorpay Order)
+// 1. Initiate Payment (Create DB Order + Razorpay Order)
 router.post('/initiate', async (req, res) => {
     try {
-        const { items, deliveryAddress, totalAmount, user, orderId } = req.body;
+        const { items, deliveryAddress, totalAmount, user, orderId, paymentMethod, couponCode, discountAmount } = req.body;
 
         // --- 1. Validation ---
         if (!user || !items || items.length === 0) {
@@ -26,19 +27,44 @@ router.post('/initiate', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid total amount.' });
         }
 
-        if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-            console.error('SERVER CONFIG ERROR: Razorpay keys missing');
-            return res.status(500).json({ success: false, message: 'Payment service configuration error.' });
-        }
-
         // --- Helper: Get Hotel ID from first item ---
-        // We assume all items in cart are from the same hotel (enforced by frontend usually)
         const Food = require('../models/Food');
         const firstFoodItem = await Food.findById(items[0].food);
         if (!firstFoodItem) {
             return res.status(400).json({ success: false, message: 'Invalid food item detected.' });
         }
         const hotelId = firstFoodItem.hotelId;
+
+        // --- Handle COD (Cash on Delivery) ---
+        if (paymentMethod === 'COD') {
+            const newOrder = new Order({
+                user: user,
+                hotel: hotelId,
+                items: items,
+                deliveryAddress: deliveryAddress,
+                totalAmount: totalAmount,
+                paymentMethod: 'COD',
+                paymentStatus: 'PENDING',
+                status: 'PLACED',
+                couponCode,
+                discountAmount,
+                createdAt: new Date()
+            });
+            await newOrder.save();
+
+            return res.status(200).json({
+                success: true,
+                orderId: newOrder._id,
+                paymentMethod: 'COD',
+                message: 'Order placed successfully via COD'
+            });
+        }
+
+        // --- Handle ONLINE Payment (Razorpay) ---
+        if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+            console.error('SERVER CONFIG ERROR: Razorpay keys missing');
+            return res.status(500).json({ success: false, message: 'Payment service configuration error.' });
+        }
 
         // --- 2. Check for Existing Order (Idempotency for Retries) ---
         let targetOrder;
@@ -47,12 +73,12 @@ router.post('/initiate', async (req, res) => {
             targetOrder = await Order.findById(orderId);
             if (targetOrder) {
                 // If order is already paid, STOP.
-                if (targetOrder.paymentStatus === 'paid') {
+                if (targetOrder.paymentStatus === 'paid' || targetOrder.paymentStatus === 'COMPLETED') {
                     return res.status(400).json({
                         success: false,
                         message: 'This order is already paid.',
                         orderId: targetOrder._id,
-                        paymentStatus: 'paid'
+                        paymentStatus: targetOrder.paymentStatus
                     });
                 }
                 console.log(`Retrying payment for existing Order: ${orderId}`);
@@ -89,6 +115,7 @@ router.post('/initiate', async (req, res) => {
             targetOrder.razorpayOrderId = razorpayOrder.id;
             targetOrder.totalAmount = totalAmount; // Update amount just in case
             targetOrder.hotel = hotelId; // Ensure hotel is set
+            targetOrder.paymentMethod = 'ONLINE'; // Data integrity
             await targetOrder.save();
         } else {
             // Create New Order
@@ -98,9 +125,13 @@ router.post('/initiate', async (req, res) => {
                 items: items,
                 deliveryAddress: deliveryAddress,
                 totalAmount: totalAmount,
-                paymentStatus: 'pending',
-                status: 'pending',
+                paymentMethod: 'ONLINE',
+                paymentStatus: 'PENDING',
+                status: 'PLACED', // Updated to PLACED
                 razorpayOrderId: razorpayOrder.id,
+                razorpayOrderId: razorpayOrder.id,
+                couponCode,
+                discountAmount,
                 // Add timestamp for debugging
                 createdAt: new Date()
             });
@@ -116,6 +147,7 @@ router.post('/initiate', async (req, res) => {
             amount: razorpayOrder.amount, // Paise
             currency: razorpayOrder.currency,
             key: process.env.RAZORPAY_KEY_ID,
+            paymentMethod: 'ONLINE'
         });
 
     } catch (error) {

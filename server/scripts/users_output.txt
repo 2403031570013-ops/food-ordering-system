@@ -1,0 +1,33 @@
+========== ALL USERS ==========
+Name: anik jain | Email: anikjain4470@gmail.com | Role: user | Phone: N/A
+Name: Admin User | Email: admin@foodhub.com | Role: admin | Phone: N/A
+Name: anik jain44 | Email: 2403031570013@paruluniversity.ac.in | Role: user | Phone: N/A
+Name: anik jain 34 | Email: 2403031570115@paruluniversity.ac.in | Role: restaurant | Phone: N/A
+Name: Amit Kumar | Email: partner1@test.com | Role: restaurant | Phone: N/A
+Name: Test Owner | Email: test1770174149384@example.com | Role: restaurant | Phone: N/A
+Name: Test Owner | Email: test1770174243970@example.com | Role: restaurant | Phone: N/A
+Name: Test Owner | Email: test1770174303946@example.com | Role: restaurant | Phone: N/A
+Name: Test Owner | Email: test1770174378769@example.com | Role: restaurant | Phone: N/A
+Name: Test Owner | Email: test1770174427411@example.com | Role: restaurant | Phone: N/A
+Name: Test Owner | Email: test1770174501969@example.com | Role: restaurant | Phone: N/A
+Name: Amit Kumar | Email: partner2@test.com | Role: restaurant | Phone: N/A
+Name: Amit Kumar | Email: partner21@test.com | Role: restaurant | Phone: N/A
+Name: Amit Kumar | Email: anikjain44709@gmail.com | Role: restaurant | Phone: N/A
+Name: Demo Admin | Email: demo@foodhub.com | Role: admin | Phone: N/A
+Name: anik jain 35 | Email: 2403031250052@paruluniversity.ac.in | Role: user | Phone: N/A
+Name: Restaurant Owner | Email: owner@foodhub.com | Role: restaurant | Phone: 9876543210
+Name: Restaurant Owner | Email: restaurant@foodhub.com | Role: restaurant | Phone: N/A
+Name: Amit Kumar | Email: abhi1234coz@gmail.com | Role: restaurant | Phone: N/A
+Name: Anil jain | Email: jainanik270@gmail.com | Role: user | Phone: N/A
+Name: SUJALAM PANDEY | Email: sujalampandeym@gmail.com | Role: user | Phone: N/A
+Name: Bombay Manager | Email: bombay@foodhub.com | Role: restaurant | Phone: 9998887776
+Name: krish jain | Email: jainkrish416@gmail.com | Role: user | Phone: N/A
+Name: Anil jain | Email: monikashikharjain@gmail.com | Role: user | Phone: N/A
+
+========== ALL RESTAURANTS ==========
+Restaurant: Midnight Munchies | Owner Email: demo@foodhub.com | Owner: Demo Admin | Approved: true
+Restaurant: Bombay Biryani House | Owner Email: demo@foodhub.com | Owner: Demo Admin | Approved: true
+Restaurant: Dragon Bowl | Owner Email: demo@foodhub.com | Owner: Demo Admin | Approved: true
+Restaurant: Spice Villa | Owner Email: demo@foodhub.com | Owner: Demo Admin | Approved: true
+
+NOTE: Passwords are bcrypt hashed - cannot show plain text.

@@ -136,7 +136,7 @@ export default function SelfOnboarding() {
                         <Store className="w-5 h-5 text-orange-600" />
                         <span className="text-orange-600 font-bold uppercase tracking-wide text-xs">Partner Registration</span>
                     </div>
-                    <h1 className="text-5xl font-extrabold text-slate-900 mb-4">Grow with <span className="text-orange-600">FoodHub</span></h1>
+                    <h1 className="text-5xl font-extrabold text-slate-900 mb-4">Grow with <span className="text-orange-600">FoodHub Now</span></h1>
                     <p className="text-xl text-slate-500">Join thousands of restaurants and reach new customers today.</p>
                 </motion.div>
 

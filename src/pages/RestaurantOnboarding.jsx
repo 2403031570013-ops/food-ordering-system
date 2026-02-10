@@ -99,7 +99,7 @@ export default function RestaurantOnboarding() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-10"
                 >
-                    <h1 className="text-5xl font-bold text-slate-900 mb-4">Partner with FoodHub</h1>
+                    <h1 className="text-5xl font-bold text-slate-900 mb-4">Partner with FoodHub Now</h1>
                     <p className="text-xl text-slate-600">Grow your restaurant business with us</p>
                 </motion.div>
 

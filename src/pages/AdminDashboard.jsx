@@ -50,6 +50,7 @@ export default function AdminDashboard() {
     const tabs = [
         { id: 'overview', label: 'Overview' },
         { id: 'analytics', label: 'Analytics' },
+        { id: 'menu_requests', label: 'Menu Requests' },
     ];
 
     return (
@@ -114,6 +115,17 @@ export default function AdminDashboard() {
                             transition={{ duration: 0.2 }}
                         >
                             <AdminAnalytics />
+                        </motion.div>
+                    )}
+                    {activeTab === 'menu_requests' && (
+                        <motion.div
+                            key="menu_requests"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <MenuRequestView />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -293,5 +305,98 @@ function RecentOrders({ recentOrders }) {
                 </table>
             </div>
         </motion.div>
+    );
+}
+
+function MenuRequestView() {
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchRequests = async () => {
+        try {
+            const res = await api.get('/admin/menu-setup/pending');
+            setRequests(res.data);
+            setLoading(false);
+        } catch (err) {
+            console.error(err);
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchRequests(); }, []);
+
+    const handleComplete = async (id) => {
+        if (!window.confirm("Mark menu as ACTIVE? Confirm only if menu setup is complete.")) return;
+        try {
+            await api.put(`/admin/menu-setup/${id}/status`, { status: 'ACTIVE' });
+            setRequests(prev => prev.filter(r => r._id !== id));
+            alert("Menu marked active!");
+        } catch (err) {
+            alert("Error updating status");
+        }
+    };
+
+    if (loading) return <div className="text-center py-10">Loading requests...</div>;
+
+    return (
+        <div className="glass-card p-8">
+            <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <Store className="w-6 h-6 text-orange-600" />
+                Pending Menu Setup Requests
+            </h2>
+
+            {requests.length === 0 ? (
+                <div className="text-center py-10 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                    <p>No pending menu requests found.</p>
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    {requests.map(req => (
+                        <div key={req._id} className="border border-orange-100 rounded-xl p-6 bg-orange-50/30 hover:shadow-md transition-shadow relative">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                                <div>
+                                    <h3 className="font-bold text-xl text-slate-800">{req.name}</h3>
+                                    <div className="text-sm text-slate-500 flex gap-4 mt-1">
+                                        <span>{req.phone}</span>
+                                        <span>•</span>
+                                        <span>{req.email || req.contactEmail}</span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleComplete(req._id)}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-lg shadow-green-200 transition-colors"
+                                >
+                                    ✅ Mark Setup Complete
+                                </button>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-3">
+                                <div>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Provided Link</span>
+                                    {req.menuLink ? (
+                                        <a href={req.menuLink} target="_blank" rel="noreferrer" className="block text-blue-600 font-medium hover:underline break-all">
+                                            {req.menuLink}
+                                        </a>
+                                    ) : (
+                                        <p className="text-slate-400 italic text-sm">No link provided</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Manual Text details</span>
+                                    <div className="mt-1 p-3 bg-slate-50 rounded text-sm text-slate-700 whitespace-pre-wrap max-h-40 overflow-y-auto border border-slate-100">
+                                        {req.menuText || 'No text details provided.'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p className="text-xs text-slate-400 mt-3 text-right">
+                                Requested: {new Date(req.updatedAt || Date.now()).toLocaleDateString()}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 }

@@ -103,10 +103,10 @@ router.post(
 
 const rateLimit = require('express-rate-limit');
 
-// Login Rate Limiter (5 attempts per 15 mins)
+// Login Rate Limiter (50 attempts per 15 mins — generous for dev/testing)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 50,
   message: 'Too many login attempts. Please try again after 15 minutes.'
 });
 
@@ -115,7 +115,7 @@ router.post(
   '/login',
   loginLimiter,
   [
-    body('email').isEmail().withMessage('Valid email is required'),
+    body('email').trim().isEmail().withMessage('Valid email is required'),
     body('password').notEmpty().withMessage('Password is required'),
   ],
   async (req, res) => {

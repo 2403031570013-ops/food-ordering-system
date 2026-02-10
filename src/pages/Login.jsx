@@ -180,7 +180,7 @@ export default function Login() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder={activeRole === 'admin' ? "admin@foodhub.com" : "name@example.com"}
+                  placeholder={activeRole === 'admin' ? "admin@foodhubnow.com" : "name@example.com"}
                   className="w-full pl-12 pr-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:bg-white focus:bg-white shadow-sm"
                   style={{
                     '--tw-ring-color': activeRole === 'admin' ? '#10b981' : activeRole === 'restaurant' ? '#3b82f6' : '#f97316'

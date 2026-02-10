@@ -75,8 +75,9 @@ router.patch('/orders/:orderId/accept', protect, restrictTo('restaurant'), async
             return res.status(403).json({ success: false, message: 'You are not authorized to modify this order.' });
         }
 
-        // 3. Verify order is in 'pending' status
-        if (order.status !== 'pending') {
+        // 3. Verify order is in 'pending' or 'PLACED' status
+        const acceptableStatuses = ['pending', 'PLACED', 'placed'];
+        if (!acceptableStatuses.includes(order.status)) {
             return res.status(400).json({ success: false, message: `Cannot accept order. Current status: ${order.status}` });
         }
 
@@ -117,8 +118,9 @@ router.patch('/orders/:orderId/reject', protect, restrictTo('restaurant'), async
             return res.status(403).json({ success: false, message: 'You are not authorized to modify this order.' });
         }
 
-        // 3. Verify order is in 'pending' status
-        if (order.status !== 'pending') {
+        // 3. Verify order is in 'pending' or 'PLACED' status
+        const rejectableStatuses = ['pending', 'PLACED', 'placed'];
+        if (!rejectableStatuses.includes(order.status)) {
             return res.status(400).json({ success: false, message: `Cannot reject order. Current status: ${order.status}` });
         }
 
@@ -203,11 +205,11 @@ router.patch('/orders/:orderId/status', protect, restrictTo('restaurant'), async
         }
 
         // 3. Validate transition (must be accepted first)
-        if (order.status === 'pending') {
+        if (['pending', 'PLACED', 'placed'].includes(order.status)) {
             return res.status(400).json({ success: false, message: 'Please accept the order first.' });
         }
 
-        if (['rejected', 'cancelled', 'delivered'].includes(order.status)) {
+        if (['rejected', 'cancelled', 'delivered', 'REJECTED', 'CANCELLED', 'DELIVERED'].includes(order.status)) {
             return res.status(400).json({ success: false, message: `Cannot update status from '${order.status}'.` });
         }
 
@@ -219,6 +221,56 @@ router.patch('/orders/:orderId/status', protect, restrictTo('restaurant'), async
     } catch (error) {
         console.error('Update Order Status Error:', error);
         res.status(500).json({ success: false, message: 'Failed to update order status.' });
+    }
+});
+
+/**
+ * GET /api/restaurant/menu-status
+ * Check the status of menu onboarding.
+ */
+router.get('/menu-status', protect, restrictTo('restaurant'), async (req, res) => {
+    try {
+        const hotel = await Hotel.findOne({ user: req.user._id }) || await Hotel.findOne({ email: req.user.email });
+        if (!hotel) return res.status(404).json({ success: false, message: 'Restaurant not found' });
+
+        res.json({
+            success: true,
+            status: hotel.menuStatus,
+            menuLink: hotel.menuLink,
+            menuText: hotel.menuText,
+            adminNotes: hotel.adminNotes
+        });
+    } catch (error) {
+        console.error('Menu Status Error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+/**
+ * POST /api/restaurant/menu-setup
+ * Submit menu for admin setup (Link or Text).
+ */
+router.post('/menu-setup', protect, restrictTo('restaurant'), async (req, res) => {
+    try {
+        const { menuLink, menuText } = req.body;
+
+        const hotel = await Hotel.findOne({ user: req.user._id }) || await Hotel.findOne({ email: req.user.email });
+        if (!hotel) return res.status(404).json({ success: false, message: 'Restaurant not found' });
+
+        if (!menuLink && !menuText) {
+            return res.status(400).json({ success: false, message: 'Please provide a menu link or text description.' });
+        }
+
+        hotel.menuLink = menuLink || hotel.menuLink;
+        hotel.menuText = menuText || hotel.menuText;
+        hotel.menuStatus = 'PENDING_SETUP'; // Reset to pending if they update it
+
+        await hotel.save();
+
+        res.json({ success: true, message: 'Menu submitted for setup. Admin will review shortly.' });
+    } catch (error) {
+        console.error('Menu Setup Error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
