@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import api from '../api';
 import { Store, User, Mail, Phone, MapPin, FileText, CheckCircle } from 'lucide-react';
 
