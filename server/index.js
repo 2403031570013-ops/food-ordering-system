@@ -7,7 +7,18 @@ app.set('trust proxy', 1); // Trust Render's proxy for HTTPS
 
 // Middleware
 const cors = require("cors");
-app.use(cors()); // CORS must be first
+const corsOptions = {
+  origin: [
+    'http://localhost:5173', // Local development
+    'http://localhost:3000', // Local dev alternate
+    'https://food-ordering-system.vercel.app', // Production Vercel
+    process.env.FRONTEND_URL // Dynamic frontend URL from env
+  ].filter(Boolean),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions)); // CORS must be first
 
 const helmet = require('helmet');
 const xss = require('xss-clean');
