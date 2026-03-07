@@ -111,17 +111,17 @@ export default function Home() {
               transition={{ delay: 0.1 }}
               className="text-5xl md:text-7xl font-extrabold text-slate-900 leading-tight mb-6"
             >
-              Satisfy Your <br />
-              <span className="bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">Cravings</span> Today
+              Your Favorite <br />
+              <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 bg-clip-text text-transparent">Food In 30 Mins</span>
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-lg text-slate-500 mb-8 max-w-xl mx-auto md:mx-0 leading-relaxed"
+              className="text-lg text-slate-600 mb-8 max-w-xl mx-auto md:mx-0 leading-relaxed font-medium"
             >
-              Explore top-rated restaurants, browse diverse menus, and get fast delivery to your doorstep.
+              Order from 100+ verified restaurants. Premium quality, lightning-fast delivery, and irresistible flavors.
             </motion.p>
 
             {/* Search Bar */}
@@ -131,17 +131,17 @@ export default function Home() {
               transition={{ delay: 0.3 }}
               className="relative max-w-lg mx-auto md:mx-0 group z-20"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity" />
-              <div className="relative flex items-center bg-white rounded-2xl p-2 shadow-xl border border-white/50">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-red-400 to-pink-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity" />
+              <div className="relative flex items-center bg-white rounded-2xl p-2 shadow-2xl border border-white/80">
                 <Search className="w-6 h-6 text-slate-400 ml-3" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for 'Pizza', 'Burger'..."
+                  placeholder="Search restaurants, cuisines, or dishes..."
                   className="w-full px-4 py-3 bg-transparent focus:outline-none text-slate-700 font-medium placeholder:text-slate-400"
                 />
-                <button className="bg-slate-900 text-white p-3 rounded-xl hover:bg-orange-600 transition-colors">
+                <button className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-3 rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-300 hover:scale-105">
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
@@ -152,10 +152,10 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mt-6 flex items-center justify-center md:justify-start gap-2 text-sm text-slate-500 font-medium"
+              className="mt-6 flex items-center justify-center md:justify-start gap-2 text-sm text-slate-600 font-semibold"
             >
               <MapPin className="w-4 h-4 text-orange-500" />
-              {isLoadingLocation ? 'Locating you...' : (userLocation ? 'Showing restaurants near you' : 'Showing all locations')}
+              {isLoadingLocation ? '🔍 Finding restaurants near you...' : (userLocation ? '✓ Restaurants near you loaded' : '🍽️ Browse all restaurants')}
             </motion.div>
           </div>
 

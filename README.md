@@ -1,40 +1,56 @@
-# 📚 Food Ordering System - Documentation Index
+# 🍽️ FoodHub - Premium Food Delivery Platform
 
-Welcome! This comprehensive guide will help you understand and run the complete Food Ordering application.
+**Production-ready food delivery application built with React, Node.js, Express, and MongoDB.**
 
-## 🚀 Getting Started (START HERE)
+![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-### If you have 5 minutes:
-📖 **[QUICKSTART.md](./QUICKSTART.md)** - Fastest way to get up and running
-- Install dependencies
-- Configure environment
-- Seed database
-- Start both servers
+---
 
-### If you have 15 minutes:
-📖 **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - Comprehensive setup with details
-- MongoDB Atlas setup
-- Environment configuration
-- Detailed installation steps
-- Troubleshooting section
+## ⚡ Quick Start (5 Minutes)
 
-## 📖 Project Overview
+### Prerequisites
+- Node.js 16+
+- MongoDB (Atlas or local)
+- Git
 
-### Understanding What Was Built
+### Installation
+
+```bash
+# Backend setup
+cd server
+npm install
+
+# Frontend setup
+npm install
+
+# Run backend (Terminal 1)
+cd server && npm run dev
+# Runs on http://localhost:5000
+
+# Run frontend (Terminal 2)
+npm run dev
+# Runs on http://localhost:5173
+```
+
+**Visit:** http://localhost:5173
+
+### Demo Credentials
+- **Admin Email:** demo@foodhub.com
+- **Admin Password:** Demo@123
+
+---
+
+## 📖 Complete Documentation
+
+### Getting Started
+📖 **[SETUP_AND_RUN.md](./SETUP_AND_RUN.md)** - Complete setup & running guide
+📖 **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Production deployment checklist
+
+### Project Overview
+
 📖 **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Complete overview
-- What's been implemented
-- Project structure
-- Design system
-- Security features
-- Testing checklist
-
-### API Reference
-📖 **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Detailed API endpoints
-- Authentication endpoints
-- Food endpoints
-- Restaurant endpoints
-- Order endpoints
-- Error handling
 
 ## 🎯 Quick Navigation
 

@@ -55,6 +55,19 @@ const demoRestaurants = [
         status: "active",
         bgImage: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1600&q=80",
         description: "Premium North Indian dining experience."
+    },
+    {
+        name: "Sweet Bliss Cafe",
+        image: "https://images.unsplash.com/photo-1577003833010-a456b46788d8?w=800&q=80",
+        cuisine: ["Desserts", "Cafe", "Bakery"],
+        rating: 4.9,
+        deliveryTime: 25,
+        address: { street: "52 Pastry Lane", city: "Bangalore", state: "KA", pincode: "560001" },
+        location: { type: 'Point', coordinates: [77.6245, 12.9716] },
+        approved: true,
+        status: "active",
+        bgImage: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1600&q=80",
+        description: "Indulge in handcrafted desserts, pastries, and premium coffee."
     }
 ];
 
@@ -90,6 +103,14 @@ const demoMenus = {
         { name: "Chicken Tikka", price: 280, description: "Tandoori grilled chicken chunks", image: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80", category: "Starters", isVeg: false },
         { name: "Jeera Rice", price: 120, description: "Basmati rice tempered with cumin seeds", image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&q=80", category: "Rice", isVeg: true },
         { name: "Tandoori Roti", price: 30, description: "Whole wheat bread baked in clay oven", image: "https://images.unsplash.com/photo-1626082927389-9b2f3a67733f?w=800&q=80", category: "Breads", isVeg: true }
+    ],
+    "Sweet Bliss Cafe": [
+        { name: "Chocolate Lava Cake", price: 189, description: "Warm chocolate cake with molten center", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&q=80", category: "Dessert", isVeg: true },
+        { name: "Tiramisu", price: 159, description: "Classic Italian dessert with mascarpone cream", image: "https://images.unsplash.com/photo-1571115177098-24ec42ed204d?w=800&q=80", category: "Dessert", isVeg: true },
+        { name: "Berry Cheesecake", price: 169, description: "Creamy cheesecake topped with fresh berries", image: "https://images.unsplash.com/photo-1535920527107-b21e394b3af5?w=800&q=80", category: "Dessert", isVeg: true },
+        { name: "Cappuccino", price: 99, description: "Velvety cappuccino with rich espresso", image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&q=80", category: "Coffee", isVeg: true },
+        { name: "Espresso Shot", price: 69, description: "Strong and bold double espresso", image: "https://images.unsplash.com/photo-1514432324607-2e467f4af445?w=800&q=80", category: "Coffee", isVeg: true },
+        { name: "Iced Latte", price: 119, description: "Chilled latte with smooth milk foam", image: "https://images.unsplash.com/photo-1517701550927-30cf4ba20c58?w=800&q=80", category: "Coffee", isVeg: true }
     ]
 };
 
