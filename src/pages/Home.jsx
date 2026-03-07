@@ -39,19 +39,30 @@ export default function Home() {
           url += `?latitude=${userLocation.lat}&longitude=${userLocation.lng}&radius=10`; // 10km radius
         }
 
+        console.log('[HOME] Fetching restaurants from:', url, 'with location:', hasLocation);
         let response = await api.get(url);
+
+        console.log('[HOME] Restaurants response:', response.data.length, 'restaurants received');
 
         // Fallback: If nearby search yields nothing, fetch all (for demo purposes)
         if (hasLocation && response.data.length === 0) {
+          console.log('[HOME] No nearby restaurants, fetching all');
           response = await api.get('/hotels');
         }
 
         const activeHotels = response.data.filter(h => h.approved); // Only active
+        console.log('[HOME] Active restaurants after filter:', activeHotels.length);
+        
         setRestaurants(activeHotels);
         setFilteredRestaurants(activeHotels);
         setIsLoading(false);
       } catch (error) {
-        console.error('Failed to fetch restaurants', error);
+        console.error('[HOME] Failed to fetch restaurants:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+          config: error.config,
+        });
         setIsLoading(false);
       }
     };

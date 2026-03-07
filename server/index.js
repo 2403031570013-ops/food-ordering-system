@@ -60,10 +60,19 @@ app.use(passport.initialize());
 // Database Connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
+    const mongoUri = process.env.MONGO_URI;
+    const dbName = mongoUri?.includes('foodapp') ? 'foodapp' : 'unknown';
+    
+    console.log('🔗 Connecting to MongoDB...');
+    console.log('   Database:', dbName);
+    console.log('   Cluster: cleartoday (MongoDB Atlas)');
+    
+    await mongoose.connect(mongoUri, {
       tlsAllowInvalidCertificates: true,
     });
+    
     console.log("✅ MongoDB Connected Successfully");
+    console.log("   Ready to seed demo restaurants...");
   } catch (error) {
     console.error("❌ MongoDB Connection Error:", error.message);
     console.warn("⚠️  Server will continue running without database connection.");

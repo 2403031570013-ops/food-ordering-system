@@ -16,6 +16,8 @@ router.get('/', async (req, res) => {
       const lng = parseFloat(longitude);
       const radiusInMeters = radius ? parseInt(radius) * 1000 : 5000; // Default 5km
 
+      console.log('[HOTELS] Location-based search:', { lat, lng, radiusInMeters });
+
       query = Hotel.find({
         location: {
           $near: {
@@ -27,13 +29,21 @@ router.get('/', async (req, res) => {
           },
         },
       });
+    } else {
+      console.log('[HOTELS] Fetching all approved restaurants');
     }
 
     const hotels = await query.limit(50);
 
+    console.log(`[HOTELS] Returning ${hotels.length} restaurants`, {
+      approved_filter: 'approved: true',
+      total_found: hotels.length,
+      requested_by: req.ip,
+    });
+
     res.status(200).json(hotels);
   } catch (error) {
-    console.error('Get hotels error:', error);
+    console.error('[HOTELS] Error fetching hotels:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

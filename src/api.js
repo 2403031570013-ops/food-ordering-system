@@ -6,6 +6,17 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ||
     ? 'http://localhost:5000/api' 
     : 'https://food-ordering-system-x6mu.onrender.com/api');
 
+// Debug logging in development
+if (typeof window !== 'undefined') {
+  console.log('[API DEBUG]', {
+    env_var: import.meta.env.VITE_API_URL,
+    hostname: window.location.hostname,
+    final_url: API_BASE_URL,
+    is_localhost: window.location.hostname === 'localhost',
+    mode: import.meta.env.MODE,
+  });
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

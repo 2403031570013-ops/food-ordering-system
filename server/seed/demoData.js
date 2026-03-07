@@ -116,7 +116,10 @@ const demoMenus = {
 
 async function seedDemoData() {
     try {
-        console.log("Seeding process started...");
+        console.log("\n========================================");
+        console.log("🌱 SEEDING DEMO DATA");
+        console.log("========================================");
+        
         // Check for Demo Admin
         let demoUser = await User.findOne({ email: 'demo@foodhub.com' });
         if (!demoUser) {
@@ -126,17 +129,20 @@ async function seedDemoData() {
                 password: "Demo@123",  // pre-save hook will hash this
                 role: "admin"
             });
-            console.log("Created demo admin user.");
+            console.log("✅ Created demo admin user.");
         } else {
-            console.log("Demo admin user exists.");
+            console.log("✅ Demo admin user already exists.");
         }
 
         // Seeding Logic
+        let seedCount = 0;
+        let updateCount = 0;
+        
         for (const resData of demoRestaurants) {
             let hotel = await Hotel.findOne({ name: resData.name });
 
             if (hotel) {
-                console.log(`Updating existing restaurant: ${resData.name}`);
+                console.log(`📝 Updating: ${resData.name}`);
                 // Use raw collection update to avoid validation/overwrite issues
                 // Only update visual fields, NOT user/email ownership
                 const { name, ...updateFields } = resData;
@@ -158,14 +164,16 @@ async function seedDemoData() {
                         }
                     }
                 );
+                updateCount++;
             } else {
-                console.log(`Creating new restaurant: ${resData.name}`);
+                console.log(`➕ Creating: ${resData.name}`);
                 hotel = await Hotel.create({
                     ...resData,
                     user: demoUser._id,
                     email: `contact@${resData.name.replace(/\s+/g, '').toLowerCase()}.com`,
                     phone: "9876543210"
                 });
+                seedCount++;
             }
 
             const menu = demoMenus[hotel.name];
@@ -182,13 +190,19 @@ async function seedDemoData() {
                         { upsert: true }
                     );
                 }
-                console.log(`  Synced ${menu.length} menu items for ${hotel.name}`);
+                console.log(`  📦 Synced ${menu.length} menu items for ${hotel.name}`);
             }
         }
-        console.log("✅ Demo data seeded successfully.");
+        
+        console.log("\n========================================");
+        console.log("✅ DEMO DATA SEEDING COMPLETE");
+        console.log(`   Created: ${seedCount} new restaurants`);
+        console.log(`   Updated: ${updateCount} existing restaurants`);
+        console.log(`   Total: ${demoRestaurants.length} restaurants active`);
+        console.log("========================================\n");
 
     } catch (error) {
-        console.error("Seeding error:", error);
+        console.error("❌ Seeding error:", error);
     }
 }
 
