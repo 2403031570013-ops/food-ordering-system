@@ -1,0 +1,27 @@
+REBUILD TRIGGER: March 7, 2026 - 17:21 IST
+
+This file triggers auto-deployment on Render/Vercel when pushed.
+
+Latest commits:
+- 3f5a954: Production environment variables & CORS
+- 6a92636: Debugging guide & test script
+
+Deployment steps:
+1. Render backend should rebuild with correct MONGO_URI and CORS
+2. Vercel frontend should rebuild with VITE_API_URL pointing to Render
+3. Both should deploy within 5 minutes
+
+Check status:
+- Render: https://dashboard.render.com
+- Vercel: https://vercel.com
+
+If still showing old "India Restaurant" site:
+1. Hard refresh: Ctrl+Shift+R
+2. Check Console (F12) for errors
+3. Check Network tab for API calls to Render domain
+
+Expected after rebuild:
+- Homepage loads FoodHub branding
+- "Your Favorite Food In 30 Mins" tagline visible
+- 5 restaurants show in grid
+- API calls go to: food-ordering-system-x6mu.onrender.com/api/hotels
